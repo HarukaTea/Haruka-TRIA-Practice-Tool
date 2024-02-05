@@ -1,0 +1,22 @@
+{
+  "name": "Haruka-Practice-Tools",
+  "tree": {
+    "$className": "DataModel",
+
+    "Workspace": {
+      "MapScripts": {
+        "$className": "Folder",
+        "$path": "src/MapScripts"
+      },
+      "EffectScript": {
+        "$path": "src/EffectScript.client.luau"
+      },
+      "LocalMapScript": {
+        "$path": "src/LocalMapScript.client.luau"
+      },
+      "MapScript": {
+        "$path": "src/MapScript.server.luau"
+      }
+    }
+  }
+}
