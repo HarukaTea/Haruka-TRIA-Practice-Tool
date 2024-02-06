@@ -11,8 +11,8 @@ local fromRGB = Color3.fromRGB
 local newTweenInfo = TweenInfo.new
 
 local Texts = {
-    SetCheck = "Set Checkpoint",
-    ReturnCheck = "Teleport Back"
+    SetCheck = "Set Checkpoint (C)",
+    ReturnCheck = "Teleport Back (T)"
 }
 
 local function ButtonOption(id: string, self: table) : TextButton

@@ -1,7 +1,7 @@
 --!nocheck
 
+local CAS = game:GetService("ContextActionService")
 local Lighting = game:GetService("Lighting")
-local StarterPack = game:GetService("StarterPack")
 
 local Components = require(script.Parent.Parent.Vanilla)
 local Fusion = require(script.Parent.Parent.Parent.Fusion)
@@ -74,7 +74,6 @@ local function Panel(self: table) : Frame
         local finalSpeed = tonumber(speed) * 3
 
         self.plr.Backpack.Noclip:SetAttribute("Speed", finalSpeed)
-        StarterPack.Noclip:SetAttribute("Speed", finalSpeed)
     end)
 
     local waterConnection: RBXScriptConnection = nil
@@ -122,7 +121,7 @@ local function Panel(self: table) : Frame
         end
     })
     shadowsObserver:onChange(function()
-        local state = peek(inputs.Shadows)
+        local state = peek(inputs.Shadows) :: boolean
 
         Lighting.GlobalShadows = state
 
@@ -142,25 +141,25 @@ local function Panel(self: table) : Frame
     shadersObserver:onChange(function()
         if peek(inputs.Shaders) then
             for _, shader in Lighting:GetDescendants() do
-                _detectShader(shader, false)
+                _detectShader(shader, true)
             end
 
             shaderConnection = Lighting.DescendantAdded:Connect(function(added)
                 wait()
-                _detectShader(added, false)
+                _detectShader(added, true)
             end)
         else
             if shaderConnection then shaderConnection:Disconnect() end
 
             for _, shader in Lighting:GetDescendants() do
-                _detectShader(shader, true)
+                _detectShader(shader, false)
             end
         end
     end)
 
     local btnConnection: RBXScriptConnection = nil
     local function _detectButton(btn: Model)
-        local maxBtns = peek(inputs.Buttons)
+        local maxBtns = peek(inputs.Buttons) :: string
 
         if maxBtns == "" then return end
         if sFind(btn.Name, "_Button") and btn:IsA("Model") then
@@ -168,7 +167,7 @@ local function Panel(self: table) : Frame
             if tonumber(index) > tonumber(maxBtns) then return end
 
             for _, child in btn:GetDescendants() do
-                if child:IsA("BasePart") then
+                if child:IsA("BasePart") or child:IsA("UnionOperation") or child:IsA("MeshPart") then
                     child.Transparency = 1
                     child.CanCollide = false
                 end
@@ -216,10 +215,11 @@ local function Panel(self: table) : Frame
         end
     end)
     self.plr.CharacterAdded:Connect(function(char: Model)
-        local humanoid = char:WaitForChild("Humanoid")
+        local humanoid = char:WaitForChild("Humanoid") :: Humanoid
 
-        local speed = peek(inputs.Speed)
-        local jump = peek(inputs.Jump)
+        local speed = peek(inputs.Speed) :: string
+        local jump = peek(inputs.Jump) :: string
+        local noclip = peek(inputs.Noclip) :: string
 
         if speed ~= "" then humanoid.WalkSpeed = tonumber(speed) end
         if jump ~= "" then humanoid.Jump = tonumber(jump) end
@@ -229,7 +229,21 @@ local function Panel(self: table) : Frame
             light.Name = "SelfLight"
             light.Parent = char.PrimaryPart
         end
+        if noclip ~= "" then self.plr.Backpack:WaitForChild("Noclip"):SetAttribute("Speed", tonumber(noclip)) end
     end)
+
+    local function _setCheckpoint(_, inputState: Enum.UserInputState)
+        if inputState ~= Enum.UserInputState.Begin then return end
+
+        self.inputs.SetCheck:set(self.plr.Character.PrimaryPart.CFrame)
+    end
+    local function _returnCheckpoint(_, inputState: Enum.UserInputState)
+        if inputState ~= Enum.UserInputState.Begin then return end
+
+        self.plr.Character:PivotTo(Fusion.peek(self.inputs.SetCheck))
+    end
+    CAS:BindAction("SetCheckpoint", _setCheckpoint, false, Enum.KeyCode.C)
+    CAS:BindAction("ReturnCheckpoint", _returnCheckpoint, false, Enum.KeyCode.T)
 
     return Components.Frame({
         Name = "PanelBG",
