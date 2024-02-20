@@ -13,6 +13,7 @@ local RepS = game:GetService("ReplicatedStorage")
 local StarterPack = game:GetService("StarterPack")
 
 local instanceNew = Instance.new
+local wait = task.wait
 
 --// Setups modules
 if RepS:FindFirstChild("HarukaModules") then RepS.HarukaModules:Destroy() end
@@ -59,3 +60,11 @@ MapLib:Alert("Haruka Practice Tools Loaded!", "white", 5)
 MapLib.RoundEnding:Connect(function()
 	RepS:SetAttribute("HarukaModulesLoaded", nil)
 end)
+
+--// Finish
+wait(2)
+players = MapLib:GetPlayers() :: table
+
+for _, plr: Player in players do
+	if plr then MapLib:Survive(plr) end
+end
