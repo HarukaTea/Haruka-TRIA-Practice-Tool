@@ -1,4 +1,6 @@
---!strict
+--!nocheck
+--!optimize 2
+--!native
 
 --[[
 	Given a reactive object, updates all dependent reactive objects.

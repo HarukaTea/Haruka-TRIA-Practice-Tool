@@ -1,4 +1,6 @@
 --!nocheck
+--!optimize 2
+--!native
 
 local Components = require(script.Parent.Parent.Vanilla)
 local Fusion = require(script.Parent.Parent.Parent.Fusion)
@@ -16,8 +18,10 @@ local Texts = {
     Lights = "Self-Light",
     Shadows = "Shadows",
     Shaders = "Shaders",
-    SkipBtns = "Skip Btns",
+    SkipBtns = "Auto Btns",
     InfAir = "Inf Air",
+    ForceSpeed = "Force Speed",
+    ForceJump = "Force Jump"
 }
 
 local function ToggleOption(id: string, self: table) : Frame

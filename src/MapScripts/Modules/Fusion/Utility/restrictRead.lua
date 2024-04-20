@@ -1,4 +1,6 @@
---!strict
+--!nocheck
+--!optimize 2
+--!native
 
 --[[
 	Restricts the reading of missing members for a table.

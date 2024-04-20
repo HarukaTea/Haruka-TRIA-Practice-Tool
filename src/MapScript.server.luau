@@ -1,21 +1,19 @@
 --!nocheck
-
---[[
-	For help on how to map maps see https://tria-studio.github.io/Tria-Escape-MapLib/api/MapLib/
-]]
+--!optimize 2
+--!native
 
 local MapLib = game.GetMapLib:Invoke()()
-local map = MapLib.map.MapScripts
+local map = MapLib.map.MapScripts :: Folder
 
-local players = MapLib:GetPlayers() :: table
+local players = MapLib:GetPlayers() :: { Player }
 
 local RepS = game:GetService("ReplicatedStorage")
 local StarterPack = game:GetService("StarterPack")
+local StarterCharacterScripts = game:GetService("StarterPlayer").StarterCharacterScripts
 
 local instanceNew = Instance.new
-local wait = task.wait
 
---// Setups modules
+--// Setup packages
 if RepS:FindFirstChild("HarukaModules") then RepS.HarukaModules:Destroy() end
 local modules = map.Modules :: Folder
 modules.Name = "HarukaModules"
@@ -27,9 +25,11 @@ RepS:SetAttribute("HarukaModulesLoaded", true)
 local noclip = instanceNew("HopperBin")
 noclip.Name = "Noclip"
 noclip:SetAttribute("Speed", 60)
-map.Projectiles.NoclipControl:Clone().Parent = noclip
+map.Projectiles.HarukaNoclipControl:Clone().Parent = noclip
 
 for _, plr: Player in players do
+	if not plr then continue end
+
 	if plr.Backpack:FindFirstChild("Noclip") then plr.Backpack.Noclip:Destroy() end
 
 	noclip:Clone().Parent = plr.Backpack
@@ -37,8 +37,22 @@ end
 if StarterPack:FindFirstChild("Noclip") then StarterPack.Noclip:Destroy() end
 noclip:Clone().Parent = StarterPack
 
+--// Place package
+for _, plr: Player in players do
+	if not plr then continue end
+	if not plr.Character then continue end
+
+	if plr.Character:FindFirstChild("HarukaPostStroke") then plr.Character.HarukaPostStroke:Destroy() end
+	map.Projectiles.HarukaPostStroke:Clone().Parent = plr.Character
+end
+if StarterCharacterScripts:FindFirstChild("HarukaPostStroke") then StarterCharacterScripts.HarukaPostStroke:Destroy() end
+map.Projectiles.HarukaPostStroke:Clone().Parent = StarterCharacterScripts
+
 --// Load UI
 for _, plr: Player in players do
+	if not plr then continue end
+	if not plr.Character then continue end
+
 	local plrGui = plr.PlayerGui
 
 	if plrGui:FindFirstChild("HarukaPanel") then plrGui.HarukaPanel:Destroy() end
@@ -51,20 +65,14 @@ for _, plr: Player in players do
 	screenGui.DisplayOrder = 100
 	screenGui.Parent = plr.PlayerGui
 
-	map.Projectiles.HarukaPanelStarter:Clone().Parent = screenGui
+	map.Projectiles.HarukaPanel:Clone().Parent = screenGui
+	map.Projectiles.HarukaPanelLoader:Clone().Parent = screenGui
 end
 
-MapLib:Alert("Haruka Practice Tools Loaded!", "white", 5)
+MapLib:Alert("Fallen Practice Tools Loaded, Good Luck!", "white", 5.99)
 
 --// Clear
-MapLib.RoundEnding:Connect(function()
+local function roundEnded()
 	RepS:SetAttribute("HarukaModulesLoaded", nil)
-end)
-
---// Finish
-wait(2)
-players = MapLib:GetPlayers() :: table
-
-for _, plr: Player in players do
-	if plr then MapLib:Survive(plr) end
 end
+MapLib.RoundEnding:Once(roundEnded)

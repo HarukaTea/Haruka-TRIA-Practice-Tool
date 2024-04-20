@@ -1,4 +1,6 @@
---!strict
+--!nocheck
+--!optimize 2
+--!native
 
 --[[
 	Linearly interpolates the given animatable types by a ratio.

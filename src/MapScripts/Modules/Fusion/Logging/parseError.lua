@@ -1,4 +1,6 @@
---!strict
+--!nocheck
+--!optimize 2
+--!native
 
 --[[
 	An xpcall() error handler to collect and parse useful information about

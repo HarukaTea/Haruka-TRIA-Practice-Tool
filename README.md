@@ -1,4 +1,4 @@
-### Haruka-Practice-Tools
+### Fallen Practice Tools
 
 > A easy to use tool for practicing maps in <a href="https://www.roblox.com/games/6311279644">TRIA.os</a>
 
@@ -14,3 +14,5 @@ Long in short, this practice tool loads Fusion v0.3 into ReplicatedStorage, and 
 
 - UI things can be found in `src/MapScripts/Modules/UI`
 - Basic TRIA scripts can be found in `src/`
+
+![FPT_Banner](images/Tria-Practice-Export2.png)

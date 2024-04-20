@@ -1,7 +1,10 @@
 --!nocheck
+--!optimize 2
+--!native
 
 local CAS = game:GetService("ContextActionService")
 local Lighting = game:GetService("Lighting")
+local TestS = game:GetService("TestService")
 
 local Components = require(script.Parent.Parent.Vanilla)
 local Fusion = require(script.Parent.Parent.Parent.Fusion)
@@ -10,41 +13,52 @@ local ButtonOption = require(script.Parent.Parent.Components.ButtonOption)
 local TypeOption = require(script.Parent.Parent.Components.TypeOption)
 local ToggleOption = require(script.Parent.Parent.Components.ToggleOption)
 
-local Children, Computed, Value, Observer, peek = Fusion.Children, Fusion.Computed, Fusion.Value, Fusion.Observer, Fusion.peek
+local MapLib = game.GetMapLib:Invoke()()
+
+local Children, OnChange, Value, Observer, Computed, peek =
+    Fusion.Children, Fusion.OnChange, Fusion.Value, Fusion.Observer, Fusion.Computed, Fusion.peek
 
 local fromScale, fromOffset = UDim2.fromScale, UDim2.fromOffset
 local udNew = UDim.new
 local sFind, match = string.find, string.match
+local clear, tFind = table.clear, table.find
 local wait = task.wait
 local instanceNew = Instance.new
 local v3New = Vector3.new
 
 local function Panel(self: table) : Frame
-
     self.list = Value()
     self.panelOpen = Value(false)
     self.absSize, self.absContentSize = Value(0), Value(0)
 
     self.inputs = {
         Speed = Value("20"),
-        Jump = Value("50"),
-        Noclip = Value("20"),
-        Buttons = Value("1"),
+        ForceSpeed = Value(false),
 
+        Jump = Value("50"),
+        ForceJump = Value(false),
+
+        Noclip = Value("60"),
         Waters = Value(true),
         Lights = Value(false),
         Shadows = Value(true),
         Shaders = Value(true),
+
+        Buttons = Value("1"),
         SkipBtns = Value(false),
         InfAir = Value(false),
-
-        SetCheck = Value(self.plr.Character.PrimaryPart.CFrame)
     }
+    self.checkPoints = Value({})
 
     --// Connections
     local inputs = self.inputs
+
     local speedObserver = Observer(inputs.Speed)
+    local forceSpeedObserver = Observer(inputs.ForceSpeed)
+
     local jumpObserver = Observer(inputs.Jump)
+    local forceJumpObserver = Observer(inputs.ForceJump)
+
     local noclipObserver = Observer(inputs.Noclip)
     local watersObserver = Observer(inputs.Waters)
     local lightsObserver = Observer(inputs.Lights)
@@ -53,35 +67,92 @@ local function Panel(self: table) : Frame
     local skipBtnsObserver = Observer(inputs.SkipBtns)
     local infAirObserver = Observer(inputs.InfAir)
 
+    --// Speed
+    local function _calSpeed(speed: string) : number
+        if speed == "" then return 20 end
+        if not tonumber(speed) then return 20 end
+
+        return tonumber(speed)
+    end
     speedObserver:onChange(function()
-        local speed = peek(inputs.Speed)
-        local humanoid = self.plr.Character.Humanoid :: Humanoid
-
-        if speed == "" then return end
-        humanoid.WalkSpeed = tonumber(speed)
+        self.plr.Character.Humanoid.WalkSpeed = _calSpeed(peek(inputs.Speed))
     end)
+
+    --// Force speed detector
+    local forceSpeedConnection: RBXScriptConnection = nil
+    forceSpeedObserver:onChange(function()
+        local isForce = peek(inputs.ForceSpeed) :: boolean
+
+        if isForce then
+            if forceSpeedConnection then forceSpeedConnection:Disconnect() end
+
+            forceSpeedConnection = self.plr.Character.Humanoid:GetPropertyChangedSignal("WalkSpeed"):Connect(function()
+                local humanoid = self.plr.Character.Humanoid :: Humanoid
+
+                if humanoid.WalkSpeed < _calSpeed(peek(inputs.Speed)) then
+                    humanoid.WalkSpeed = _calSpeed(peek(inputs.Speed))
+                end
+            end)
+        else
+            if forceSpeedConnection then forceSpeedConnection:Disconnect() end
+        end
+    end)
+
+    --// Jump detector
+    local function _calJump(jump: string)
+        if jump == "" then return 50 end
+        if not tonumber(jump) then return 50 end
+
+        return tonumber(jump)
+    end
     jumpObserver:onChange(function()
-        local jump = peek(inputs.Jump)
-        local humanoid = self.plr.Character.Humanoid :: Humanoid
-
-        if jump == "" then return end
-        humanoid.JumpPower = tonumber(jump)
+        self.plr.Character.Humanoid.JumpPower = _calJump(peek(inputs.Jump))
     end)
+
+    --// Force jump detector
+    local forceJumpConnection: RBXScriptConnection = nil
+    forceJumpObserver:onChange(function()
+        local isForce = peek(inputs.ForceJump) :: boolean
+
+        if isForce then
+            if forceJumpConnection then forceJumpConnection:Disconnect() end
+
+            forceJumpConnection = self.plr.Character.Humanoid:GetPropertyChangedSignal("JumpPower"):Connect(function()
+                local humanoid = self.plr.Character.Humanoid :: Humanoid
+
+                if humanoid.JumpPower < _calJump(peek(inputs.Jump)) then
+                    humanoid.JumpPower = _calJump(peek(inputs.Jump))
+                end
+            end)
+        else
+            if forceJumpConnection then forceJumpConnection:Disconnect() end
+        end
+    end)
+
+    --// Noclip detector
+    local function _calNoclipSpeed(speed: string)
+        if speed == "" then return 60 end
+        if not tonumber(speed) then return 60 end
+
+        return tonumber(speed)
+    end
     noclipObserver:onChange(function()
-        local speed = peek(inputs.Noclip)
-
-        if speed == "" then return end
-        local finalSpeed = tonumber(speed) * 3
-
-        self.plr.Backpack.Noclip:SetAttribute("Speed", finalSpeed)
+        self.plr.Backpack.Noclip:SetAttribute("Speed", _calNoclipSpeed(peek(inputs.Noclip)))
     end)
 
+    --// Water detector
     local waterConnection: RBXScriptConnection = nil
+    local waterDetected = {}
     local function _detectWater(water: BasePart)
-        if sFind(water.Name, "_Liquid") or sFind(water.Name, "_Gas") then water:Destroy() end
+        if sFind(water.Name, "_Liquid") or sFind(water.Name, "_Gas") then
+            waterDetected[water] = water.Parent
+            water.Parent = TestS
+        end
     end
     watersObserver:onChange(function()
         if peek(inputs.Waters) == false then
+            if waterConnection then waterConnection:Disconnect() end
+
             for _, water in workspace:GetDescendants() do
                 _detectWater(water)
             end
@@ -93,8 +164,16 @@ local function Panel(self: table) : Frame
 
         else
             if waterConnection then waterConnection:Disconnect() end
+
+            for water, parent in waterDetected do
+                water.Parent = if parent then parent else nil
+            end
+
+            clear(waterDetected)
         end
     end)
+
+    --// Self-light detector
     lightsObserver:onChange(function()
         local char = self.plr.Character :: Model
 
@@ -111,13 +190,14 @@ local function Panel(self: table) : Frame
         end
     end)
 
-    local oriEnd, oriStart = Value(2000), Value(0)
+    --// Shadows detector
+    local oriStart, oriEnd = Value(Lighting.FogStart), Value(Lighting.FogEnd)
     Fusion.Hydrate(Lighting)({
         [Fusion.OnChange("FogStart")] = function(newStart)
-            if newStart ~= 0 then oriStart:set(newStart) end
+            if newStart ~= 1599 * 40 ^ 2 then oriStart:set(newStart) end
         end,
         [Fusion.OnChange("FogEnd")] = function(newEnd)
-            if newEnd ~= 1599 * 40 then oriEnd:set(newEnd) end
+            if newEnd ~= 1599 * 40 ^ 2 then oriEnd:set(newEnd) end
         end
     })
     shadowsObserver:onChange(function()
@@ -126,66 +206,103 @@ local function Panel(self: table) : Frame
         Lighting.GlobalShadows = state
 
         if not state then
-            Lighting.FogEnd = 1599 * 40
-            Lighting.FogStart = 0
+            Lighting.FogEnd = 1599 * 40 ^ 2
+            Lighting.FogStart = 1599 * 40 ^ 2
         else
             Lighting.FogEnd = peek(oriEnd)
             Lighting.FogStart = peek(oriStart)
         end
     end)
 
+    --// Shaders detector
     local shaderConnection: RBXScriptConnection = nil
-    local function _detectShader(shader: ColorCorrectionEffect, state: boolean)
-        if shader:IsA("ColorCorrectionEffect") then shader.Enabled = state end
+    local shaders = {}
+    local shaderConnections = {}
+    local function _detectShader(shader: Instance)
+        local function __isShader()
+            if shader.Enabled then
+                if shaderConnections[shader] then
+                    shaderConnections[shader]:Disconnect()
+                    shaderConnections[shader] = nil
+                end
+
+                shader.Enabled = false
+                shaders[#shaders + 1] = shader
+            else
+                shaderConnections[shader] = shader:GetPropertyChangedSignal("Enabled"):Connect(function()
+                    if shader.Enabled then
+                        __isShader()
+                    end
+                end)
+            end
+        end
+
+        if shader:IsA("ColorCorrectionEffect")
+            or shader:IsA("BloomEffect")
+            or shader:IsA("SunRaysEffect")
+            or shader:IsA("BlurEffect")
+            or shader:IsA("DepthOfFieldEffect") then
+
+                __isShader()
+        end
     end
     shadersObserver:onChange(function()
         if peek(inputs.Shaders) then
-            for _, shader in Lighting:GetDescendants() do
-                _detectShader(shader, true)
-            end
+            if shaderConnection then shaderConnection:Disconnect() end
 
-            shaderConnection = Lighting.DescendantAdded:Connect(function(added)
-                wait()
-                _detectShader(added, true)
-            end)
+            for _, shader in shaders do
+                if shader and shader.Parent then shader.Enabled = true end
+            end
+            for _, shaderConn in shaderConnections do
+                if shaderConn then shaderConnection:Disconnect() end
+            end
+            clear(shaders)
+            clear(shaderConnections)
         else
             if shaderConnection then shaderConnection:Disconnect() end
 
             for _, shader in Lighting:GetDescendants() do
-                _detectShader(shader, false)
+                _detectShader(shader)
             end
+            shaderConnection = Lighting.DescendantAdded:Connect(function(added)
+                wait()
+                _detectShader(added)
+            end)
         end
     end)
 
+    --// Button detector
     local btnConnection: RBXScriptConnection = nil
-    local function _detectButton(btn: Model)
+    function self:_detectButton(btn: Model)
+        if not btn:IsA("Model") then return end
+
         local maxBtns = peek(inputs.Buttons) :: string
 
-        if maxBtns == "" then return end
+        if maxBtns == "" then maxBtns = 1 end
         if sFind(btn.Name, "_Button") and btn:IsA("Model") then
             local index = match(btn.Name, "%d+")
             if tonumber(index) > tonumber(maxBtns) then return end
 
             for _, child in btn:GetDescendants() do
-                if child:IsA("BasePart") or child:IsA("UnionOperation") or child:IsA("MeshPart") then
+                if child:IsA("BasePart") or child:IsA("UnionOperation") then
                     child.Transparency = 1
                     child.CanCollide = false
                 end
             end
 
-            btn.Hitbox.Size = v3New(15.99, 15.99, 15.99)
+            btn.Hitbox.Size = v3New(1, 1, 1) * 15.99
             btn.Hitbox.CFrame = self.plr.Character.PrimaryPart.CFrame
         end
     end
     skipBtnsObserver:onChange(function()
         if peek(inputs.SkipBtns) then
             for _, btn in workspace:GetDescendants() do
-                _detectButton(btn)
+                self:_detectButton(btn)
             end
 
             btnConnection = workspace.DescendantAdded:Connect(function(added: Instance)
-                wait(0.7)
-                _detectButton(added)
+                wait(1)
+                self:_detectButton(added)
             end)
 
         else
@@ -193,9 +310,14 @@ local function Panel(self: table) : Frame
         end
     end)
 
+    --// Inf air detector
     local infAirConnection: RBXScriptConnection = nil
+    local whiteList = { "acid", "lava" }
+    local changedWaters = {}
     local function _detectWaterState(water: BasePart)
-        if sFind(water.Name, "_Liquid") or sFind(water.Name, "_Gas") then
+        if water:GetAttribute("Type") and tFind(whiteList, water:GetAttribute("Type")) then
+            changedWaters[water] = water:GetAttribute("Type")
+
             water:SetAttribute("Type", "water")
         end
     end
@@ -212,38 +334,61 @@ local function Panel(self: table) : Frame
 
         else
             if infAirConnection then infAirConnection:Disconnect() end
+
+            for water, attr in changedWaters do
+                if water and water.Parent then water:SetAttribute("Type", attr) end
+            end
+            clear(changedWaters)
         end
     end)
+
+    --// Spawn
     self.plr.CharacterAdded:Connect(function(char: Model)
-        local humanoid = char:WaitForChild("Humanoid") :: Humanoid
+        local speed, jump = _calSpeed(peek(inputs.Speed)), _calJump(peek(inputs.Jump))
+        local humanoid = self.plr.Character:WaitForChild("Humanoid") :: Humanoid
 
-        local speed = peek(inputs.Speed) :: string
-        local jump = peek(inputs.Jump) :: string
-        local noclip = peek(inputs.Noclip) :: string
+        humanoid.WalkSpeed = speed
+        humanoid.JumpPower = jump
+        self.plr.Backpack.Noclip:SetAttribute("Speed", _calNoclipSpeed(peek(inputs.Noclip)))
 
-        if speed ~= "" then humanoid.WalkSpeed = tonumber(speed) end
-        if jump ~= "" then humanoid.Jump = tonumber(jump) end
         if peek(inputs.Lights) then
             local light = instanceNew("PointLight")
             light.Range = 16
             light.Name = "SelfLight"
             light.Parent = char.PrimaryPart
         end
-        if noclip ~= "" then self.plr.Backpack:WaitForChild("Noclip"):SetAttribute("Speed", tonumber(noclip)) end
+
+        if forceSpeedConnection then forceSpeedConnection:Disconnect() end
+        if forceJumpConnection then forceJumpConnection:Disconnect() end
+
+        if peek(inputs.ForceSpeed) then
+            forceSpeedConnection = self.plr.Character.Humanoid:GetPropertyChangedSignal("WalkSpeed"):Connect(function()
+                if humanoid.WalkSpeed < _calSpeed(peek(inputs.Speed)) then
+                    humanoid.WalkSpeed = _calSpeed(peek(inputs.Speed))
+                end
+            end)
+        end
+        if peek(inputs.ForceJump) then
+            forceJumpConnection = self.plr.Character.Humanoid:GetPropertyChangedSignal("JumpPower"):Connect(function()
+                if humanoid.JumpPower < _calJump(peek(inputs.Jump)) then
+                    humanoid.JumpPower = _calJump(peek(inputs.Jump))
+                end
+            end)
+        end
     end)
 
-    local function _setCheckpoint(_, inputState: Enum.UserInputState)
+    --// Checkpoints
+    local function _addCheckPoint(_, inputState: Enum.UserInputState)
         if inputState ~= Enum.UserInputState.Begin then return end
 
-        self.inputs.SetCheck:set(self.plr.Character.PrimaryPart.CFrame)
-    end
-    local function _returnCheckpoint(_, inputState: Enum.UserInputState)
-        if inputState ~= Enum.UserInputState.Begin then return end
+        local cTable = Fusion.peek(self.checkPoints)
 
-        self.plr.Character:PivotTo(Fusion.peek(self.inputs.SetCheck))
+        cTable[#cTable + 1] = self.plr.Character.PrimaryPart.CFrame
+        self.checkPoints:set(cTable)
+
+        MapLib:Alert("Checkpoint added!", "white", 3)
     end
-    CAS:BindAction("SetCheckpoint", _setCheckpoint, false, Enum.KeyCode.C)
-    CAS:BindAction("ReturnCheckpoint", _returnCheckpoint, false, Enum.KeyCode.T)
+    CAS:BindAction("HarukaPanelAddCheckpoint", _addCheckPoint, false, Enum.KeyCode.X)
 
     return Components.Frame({
         Name = "PanelBG",
@@ -273,7 +418,7 @@ local function Panel(self: table) : Frame
                     end
                 end),
 
-                [Fusion.OnChange("AbsoluteSize")] = function(size)
+                [OnChange("AbsoluteSize")] = function(size)
                     self.absSize:set(size.Y)
                 end,
                 [Fusion.Ref] = self.list,
@@ -284,13 +429,17 @@ local function Panel(self: table) : Frame
                         SortOrder = Enum.SortOrder.LayoutOrder,
                         HorizontalAlignment = Enum.HorizontalAlignment.Center,
 
-                        [Fusion.OnChange("AbsoluteContentSize")] = function(size)
+                        [OnChange("AbsoluteContentSize")] = function(size)
                             self.absContentSize:set(size.Y)
                         end
                     }),
 
                     TypeOption("Speed", self),
+                    ToggleOption("ForceSpeed", self),
+
                     TypeOption("Jump", self),
+                    ToggleOption("ForceJump", self),
+
                     TypeOption("Noclip", self),
 
                     ToggleOption("Waters", self),
@@ -300,11 +449,16 @@ local function Panel(self: table) : Frame
 
                     TypeOption("Buttons", self),
                     ToggleOption("SkipBtns", self),
+                    ButtonOption("ActivateAllBtns", self),
 
-                    ButtonOption("SetCheck", self),
-                    ButtonOption("ReturnCheck", self),
+                    ToggleOption("InfAir", self),
 
-                    ToggleOption("InfAir", self)
+                    ButtonOption("AddCheck", self),
+                    ButtonOption("ClearCheck", self),
+
+                    Fusion.ForValues(self.checkPoints, function(_, checkPoint: CFrame)
+                        return ButtonOption("Checkpoint", self, checkPoint)
+                    end, Fusion.cleanup)
                 }
             })
         }

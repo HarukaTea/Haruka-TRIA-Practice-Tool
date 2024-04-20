@@ -1,4 +1,6 @@
 --!nocheck
+--!optimize 2
+--!native
 
 local Players = game:GetService("Players")
 local UIS = game:GetService("UserInputService")

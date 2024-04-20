@@ -1,4 +1,6 @@
---!strict
+--!nocheck
+--!optimize 2
+--!native
 
 --[[
 	Constructs a 'use callback' for the purposes of collecting dependencies.

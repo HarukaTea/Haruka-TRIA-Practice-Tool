@@ -1,4 +1,6 @@
---!strict
+--!nocheck
+--!optimize 2
+--!native
 --[[
     Roblox implementation for Fusion's abstract scheduler layer.
 ]]

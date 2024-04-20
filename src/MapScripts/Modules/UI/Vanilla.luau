@@ -113,7 +113,8 @@ end
 ]]
 function Components.HoverImageButton(props: table) : ImageButton
 	return _createNewCompoent(props, "ImageButton", {
-		BackgroundColor3 = Color3.new(),
+		Name = "Hover",
+		BackgroundColor3 = color3New(),
 		BackgroundTransparency = 1,
 		AnchorPoint = v2New(0.5, 0.5),
 		Position = fromScale(0.5, 0.5),

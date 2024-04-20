@@ -1,4 +1,8 @@
 --!nocheck
+--!optimize 2
+--!native
+
+local CAS = game:GetService("ContextActionService")
 
 local Components = require(script.Parent.Parent.Vanilla)
 local Fusion = require(script.Parent.Parent.Parent.Fusion)
@@ -11,11 +15,18 @@ local udNew = UDim.new
 local uiStrokeState = Fusion.Value(false)
 
 local function OpenButton(self: table) : TextButton
+    local function _setPanelOpen(_, inputState: Enum.UserInputState)
+        if inputState ~= Enum.UserInputState.Begin then return end
+
+        self.panelOpen:set(not Fusion.peek(self.panelOpen))
+    end
+    CAS:BindAction("HarukaPanelSetOpen", _setPanelOpen, false, Enum.KeyCode.C)
+
     return Components.TextButton({
         Name = "OpenBtn",
         Position = fromScale(0.84, -0.1),
         Size = fromScale(0.15, 0.5),
-        Text = "Haruka Panel",
+        Text = "Fallen Panel (C)",
         BackgroundTransparency = 0.2,
         AutoLocalize = false,
 
@@ -26,7 +37,7 @@ local function OpenButton(self: table) : TextButton
             }),
             Fusion.New("UICorner")({ CornerRadius = udNew(0.2, 0) }),
             Components.UIStroke({
-                Thickness = 3,
+                Thickness = 2.5,
                 Enabled = Fusion.Computed(function(use)
                     return use(uiStrokeState)
                 end)
