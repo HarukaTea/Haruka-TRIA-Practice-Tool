@@ -1,6 +1,4 @@
 --!nocheck
---!optimize 2
---!native
 
 local CAS = game:GetService("ContextActionService")
 local Lighting = game:GetService("Lighting")
@@ -28,7 +26,7 @@ local v3New = Vector3.new
 
 local function Panel(self: table) : Frame
     self.list = Value()
-    self.panelOpen = Value(false)
+    self.panelOpen = Value(true)
     self.absSize, self.absContentSize = Value(0), Value(0)
 
     self.inputs = {
