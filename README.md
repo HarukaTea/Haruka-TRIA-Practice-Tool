@@ -14,5 +14,3 @@ Long in short, this practice tool loads Fusion v0.3 into ReplicatedStorage, and 
 
 - UI things can be found in `src/MapScripts/Modules/UI`
 - Basic TRIA scripts can be found in `src/`
-
-![FPT_Banner](images/Tria-Practice-Export2.png)
