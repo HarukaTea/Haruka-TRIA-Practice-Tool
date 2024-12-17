@@ -1,60 +1,90 @@
---!nocheck
---!optimize 2
---!native
+require(game:GetService("ServerScriptService").Runtime):Init()
 
-local CS = game:GetService("CollectionService")
+
 local Players = game:GetService("Players")
-local RS = game:GetService("RunService")
+local RepS = game:GetService("ReplicatedStorage")
 
+local HarukaLib = require(RepS.HarukaModules.Shared.HarukaLib)
+
+local camera = workspace.CurrentCamera
 local plr = Players.LocalPlayer
+local plrGui = plr:FindFirstChildOfClass("PlayerGui")
 
-local strokes = {}
+local uiStrokes = {}
 
-local v2New = Vector2.new
-local clock = os.clock
+local DESIGN_VP_SIZE = Vector2.new(1172, 466.4)
 
-local DESIGN_VP_SIZE = v2New(1184, 466)
-
---// Tag UI
+--// Private
+local function __getBox(vector: Vector2) : number
+	return math.min(vector.X, vector.Y)
+end
 local function _calScreenRatio() : number
-    local function average(vector2: Vector2) : number
-        return (vector2.X + vector2.Y) / 2
-    end
+	return __getBox(camera.ViewportSize) / __getBox(DESIGN_VP_SIZE)
+end
+local function _getInstancePosition(instance: Instance): Vector3
+	if instance:IsA("Part") then
+		return instance.Position
 
-    return average(workspace.CurrentCamera.ViewportSize) / average(DESIGN_VP_SIZE)
+	elseif instance:IsA("Model") then
+		local cf, size = instance:GetBoundingBox()
+		return cf.Position
+	end
+
+	return Vector3.zero
 end
 
--- Connections
-local function strokeAdded(added: UIStroke)
-    strokes[added] = added.Thickness
+--// Pre-defined functions
+local function _strokeCalInWB(stroke: UIStroke)
+	local thickness = stroke.Thickness
+	local disconnect: () -> () = nil
 
-    added.Thickness *= _calScreenRatio()
+	local function _update()
+		if not stroke.Parent then
+			disconnect()
+		else
+			local billboardGui = stroke:FindFirstAncestorOfClass("BillboardGui")
+			local adornee = billboardGui.Adornee
+			local origin = adornee and _getInstancePosition(adornee) or _getInstancePosition(billboardGui.Parent)
+			local magnitude = (camera.CFrame.Position - origin).Magnitude
+			local distanceRatio = ((billboardGui:GetAttribute("Distance") or 15.99) / magnitude)
+
+			stroke.Thickness = thickness * distanceRatio * _calScreenRatio()
+		end
+	end
+	_update()
+	disconnect = HarukaLib.Clock(0.1, _update)
+
+	stroke:SetAttribute("AlreadyTransformed", true)
 end
-CS:GetInstanceAddedSignal("ScreenStroke"):Connect(strokeAdded)
+local function _strokeAdded(added: Instance)
+	if added:IsA("UIStroke") and not added:GetAttribute("AlreadyTransformed") then
+		if not added:IsDescendantOf(script.Parent) then return end
 
--- Setups
-local function updateStroke()
-    local fpsLimit, lastTick = 0.5, 0
+		if added:FindFirstAncestorOfClass("BillboardGui") then
+			_strokeCalInWB(added)
+			return
+		end
+		uiStrokes[added] = added.Thickness
 
-    RS.Heartbeat:Connect(function()
-        if clock() - lastTick >= fpsLimit then
-            lastTick = clock()
-
-            for i, thickness in strokes do
-                if not i.Parent then
-                    strokes[i] = nil
-                else
-                    i.Thickness = thickness * _calScreenRatio()
-                end
-            end
-        end
-    end)
-
-    for _, element in plr.PlayerGui:WaitForChild("HarukaPanel"):GetDescendants() do
-        if element:IsA("UIStroke") then CS:AddTag(element, "ScreenStroke") end
-    end
-    plr.PlayerGui:WaitForChild("HarukaPanel").DescendantAdded:Connect(function(descendant)
-        if descendant:IsA("UIStroke") then CS:AddTag(descendant, "ScreenStroke") end
-    end)
+		added.Thickness *= _calScreenRatio()
+		added:SetAttribute("AlreadyTransformed", true)
+	end
 end
-updateStroke()
+
+--// Setups
+for _, child: Instance in plrGui:GetDescendants() do
+	_strokeAdded(child)
+end
+plrGui.DescendantAdded:Connect(_strokeAdded)
+
+--// Connections
+local function _updateSize()
+	for stroke: UIStroke, thickness: number in uiStrokes do
+		if not stroke.Parent then
+			uiStrokes[stroke] = nil
+		else
+			stroke.Thickness = thickness * _calScreenRatio()
+		end
+	end
+end
+HarukaLib.Clock(1, _updateSize)
