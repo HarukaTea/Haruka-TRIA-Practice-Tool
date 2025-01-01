@@ -2,132 +2,139 @@
 
 local RepS = game:GetService("ReplicatedStorage")
 
-local Components = require(RepS.HarukaModules.Shared.UIAtlas.Vanilla)
-local Fusion = require(RepS.HarukaModules.Shared.Fusion)
+local Components = require(RepS.HarukaShared.Shared.UIAtlas.HarukaComponents)
+local Fusion = require(RepS.HarukaShared.Shared.Fusion)
 
-local Pinia = require(RepS.HarukaModules.Shared.UIAtlas.Pinia.HarukaPanelPinia)
+local Pinia = require(RepS.HarukaShared.Shared.UIAtlas.Pinia.HarukaPanelPinia)
 
-local ButtonOption = require(RepS.HarukaModules.Shared.UIAtlas.Components.ButtonOption)
-local TypeOption = require(RepS.HarukaModules.Shared.UIAtlas.Components.TypeOption)
-local ToggleOption = require(RepS.HarukaModules.Shared.UIAtlas.Components.ToggleOption)
+local ButtonOption = require(RepS.HarukaShared.Shared.UIAtlas.Components.ButtonOption)
+local TypeOption = require(RepS.HarukaShared.Shared.UIAtlas.Components.TypeOption)
+local ToggleOption = require(RepS.HarukaShared.Shared.UIAtlas.Components.ToggleOption)
 
 local Children, Computed, OnEvent = Fusion.Children, Fusion.Computed, Fusion.OnEvent
 
 local v2New = Vector2.new
 local fromScale = UDim2.fromScale
 
-local HarukaPanel = {}
-HarukaPanel.__index = HarukaPanel
-
 return function (plr: Player)
-    local self = setmetatable({}, HarukaPanel)
+    local self = {}
 
     self.plr = plr
 
     Pinia(self)
 
-    local scope = self.scope :: table
+    local scope = self.scope :: Fusion.Scope
     local isSelecting = Fusion.Value(scope, false)
 
-    Components.ScreenGui(scope, {
+    Components.HarukaScreenGui(scope, {
         Name = "HarukaPanel",
-        DisplayOrder = 100,
-        Parent = plr.PlayerGui.HarukaPanel,
+        DisplayOrder = 999,
+        AutoLocalize = false,
+        Parent = plr:FindFirstChildOfClass("PlayerGui").HarukaPanel,
 
-        [Children] = {
-            Components.HarukaFrame(scope, {
-                Name = "Bottom",
-                AnchorPoint = v2New(0.5, 1),
-                Position = fromScale(0.5, 1),
+    }, {
+        BottomProps = {
+            [Children] = {
+                Components.TextButton(scope, {
+                    Name = "OpenBtn",
+                    AnchorPoint = v2New(1, 0),
+                    Position = fromScale(0.99, -0.7),
+                    Size = fromScale(0.15, 0.5),
+                    Text = "Fallen Panel (C)",
+                    BackgroundTransparency = 0.2,
+                    AutoLocalize = false,
 
-                [Children] = {
-                    Components.TextButton(scope, {
-                        Name = "OpenBtn",
-                        Position = fromScale(0.84, -0.1),
-                        Size = fromScale(0.15, 0.5),
-                        Text = "Fallen Panel (C)",
+                    [Children] = {
+                        Components.UIPadding(scope, {
+                            PaddingTop = UDim.new(0.05, 0),
+                            PaddingBottom = UDim.new(0.05, 0),
+                        }),
+                        Fusion.New(scope, "UICorner")({ CornerRadius = UDim.new(0.25, 0) }),
 
-                        [Children] = {
-                            Fusion.New(scope, "UIPadding")({
-                                PaddingTop = UDim.new(0.05, 0),
-                                PaddingBottom = UDim.new(0.05, 0)
-                            }),
-                            Fusion.New(scope, "UICorner")({ CornerRadius = UDim.new(0.2, 0) }),
+                        Components.UIStroke(scope, {
+                            Thickness = 2,
 
-                            Components.UIStroke(scope, {
-                                Thickness = 2.5,
+                            Transparency = Fusion.Computed(scope, function(use: Fusion.Use)
+                                return if use(isSelecting) then 0 else 1
+                            end)
+                        })
+                    },
+                    [OnEvent("MouseButton1Click")] = function()
+                        self.panelOpen:set(not Fusion.peek(self.panelOpen))
+                    end,
+                    [OnEvent("MouseEnter")] = function()
+                        isSelecting:set(true)
+                    end,
+                    [OnEvent("MouseLeave")] = function()
+                        isSelecting:set(false)
+                    end
+                }),
 
-                                Transparency = Fusion.Tween(scope, Fusion.Computed(scope, function(use: Fusion.Use)
-                                    return if use(isSelecting) then 0.3 else 1
-                                end), TweenInfo.new(0.2))
-                            })
-                        },
-                        [OnEvent("MouseButton1Click")] = function()
-                            self.panelOpen:set(not Fusion.peek(self.panelOpen))
-                        end,
-                        [OnEvent("MouseEnter")] = function()
-                            isSelecting:set(true)
-                        end,
-                        [OnEvent("MouseLeave")] = function()
-                            isSelecting:set(false)
-                        end
-                    }),
+                Components.Frame(scope, {
+                    Name = "PanelBG",
+                    AnchorPoint = v2New(1, 0),
+                    Position = fromScale(0.99, -6),
+                    BackgroundTransparency = 0.2,
+                    Size = fromScale(0.15, 5),
+                    AutoLocalize = false,
 
-                    Components.Frame(scope, {
-                        Name = "PanelBG",
-                        Position = fromScale(0.915, -2.8),
-                        BackgroundTransparency = 0,
-                        Size = fromScale(0.15, 5),
+                    Visible = Computed(scope, function(use)
+                        return use(self.panelOpen)
+                    end),
 
-                        Visible = Computed(scope, function(use)
-                            return use(self.panelOpen)
-                        end),
+                    [Children] = {
+                        Fusion.New(scope, "UICorner")({ CornerRadius = UDim.new(0.04, 0) }),
 
-                        [Children] = {
-                            Fusion.New(scope, "UICorner")({ CornerRadius = UDim.new(0.02, 0) }),
-                            Components.ScrollingFrame(scope, {
-                                Name = "Panel",
-                                AnchorPoint = v2New(0.5, 0.5),
-                                Position = fromScale(0.5, 0.5),
-                                Size = fromScale(0.9, 0.9),
-                                ScrollBarThickness = 0,
+                        Components.ScrollingFrame(scope, {
+                            Name = "Panel",
+                            AnchorPoint = v2New(0.5, 0.5),
+                            Position = fromScale(0.5, 0.5),
+                            ScrollingDirection = Enum.ScrollingDirection.Y,
 
-                                [Children] = {
-                                    TypeOption("Speed", self),
-                                    ToggleOption("ForceSpeed", self),
+                            [Children] = {
+                                Components.PaddingFrame(scope, "AAA"),
 
-                                    TypeOption("Jump", self),
-                                    ToggleOption("ForceJump", self),
 
-                                    TypeOption("Noclip", self),
+                                TypeOption(scope, { TypeId = "Speed" }, self),
+                                ToggleOption(scope, { ToggleId = "ForceSpeed" }, self),
 
-                                    ToggleOption("Waters", self),
-                                    ToggleOption("Lights", self),
-                                    ToggleOption("Shadows", self),
-                                    ToggleOption("Shaders", self),
+                                TypeOption(scope, { TypeId = "Jump" }, self),
+                                ToggleOption(scope, { ToggleId = "ForceJump" }, self),
 
-                                    TypeOption("Buttons", self),
-                                    ToggleOption("SkipBtns", self),
-                                    ButtonOption("ActivateAllBtns", self),
+                                TypeOption(scope, { TypeId = "Noclip" }, self),
 
-                                    ToggleOption("InfAir", self),
+                                ToggleOption(scope, { ToggleId = "Waters" }, self),
+                                ToggleOption(scope, { ToggleId = "Lights" }, self),
+                                ToggleOption(scope, { ToggleId = "Shadows" }, self),
+                                ToggleOption(scope, { ToggleId = "Shaders" }, self),
+                                ToggleOption(scope, { ToggleId = "DisableKillbrick" }, self),
+                                ToggleOption(scope, { ToggleId = "ShowMedals" }, self),
 
-                                    ButtonOption("AddCheck", self),
-                                    ButtonOption("ClearCheck", self),
+                                TypeOption(scope, { TypeId = "Buttons" }, self),
+                                ToggleOption(scope, { ToggleId = "SkipBtns" }, self),
+                                ButtonOption(scope, { ButtonId = "ActivateAllBtns" }, self),
 
-                                    Fusion.ForValues(scope, self.checkPoints, function(_, localScope: table, checkPoint: CFrame)
-                                        return ButtonOption("Checkpoint", self, checkPoint, localScope)
-                                    end)
-                                }
-                            }, {
-                                Padding = UDim.new(0, 8),
-                                SortOrder = Enum.SortOrder.LayoutOrder,
-                                HorizontalAlignment = Enum.HorizontalAlignment.Center,
-                            })
-                        }
-                    })
-                }
-            })
+                                ToggleOption(scope, { ToggleId = "InfAir" }, self),
+
+                                ButtonOption(scope, { ButtonId = "AddCheck" }, self),
+                                ButtonOption(scope, { ButtonId = "ClearCheck" }, self),
+
+                                Fusion.ForPairs(scope, self.checkPoints, function(_, localScope: table, index: number, checkPoint: CFrameValue)
+                                    return index, ButtonOption(localScope, {
+                                        ButtonId = "CheckTP", CheckPoint = checkPoint.Value, Index = index,
+                                    }, self)
+                                end),
+
+
+                                Components.PaddingFrame(scope, "ZZZ"),
+                            }
+                        }, {
+                            Padding = UDim.new(0, 8),
+                            HorizontalAlignment = Enum.HorizontalAlignment.Center,
+                        })
+                    }
+                })
+            }
         }
     })
 end

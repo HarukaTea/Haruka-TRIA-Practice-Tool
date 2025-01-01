@@ -4,7 +4,7 @@ require(game:GetService("ServerScriptService").Runtime):Init()
 local Players = game:GetService("Players")
 local RepS = game:GetService("ReplicatedStorage")
 
-local HarukaLib = require(RepS.HarukaModules.Shared.HarukaLib)
+local HarukaLib = require(RepS.HarukaShared.Shared.HarukaLib)
 
 local camera = workspace.CurrentCamera
 local plr = Players.LocalPlayer
@@ -49,6 +49,7 @@ local function _strokeCalInWB(stroke: UIStroke)
 			local distanceRatio = ((billboardGui:GetAttribute("Distance") or 15.99) / magnitude)
 
 			stroke.Thickness = thickness * distanceRatio * _calScreenRatio()
+			stroke.Thickness = math.clamp(stroke.Thickness, 0, 3)
 		end
 	end
 	_update()
@@ -67,6 +68,7 @@ local function _strokeAdded(added: Instance)
 		uiStrokes[added] = added.Thickness
 
 		added.Thickness *= _calScreenRatio()
+		added.Thickness = math.clamp(added.Thickness, 0, 3)
 		added:SetAttribute("AlreadyTransformed", true)
 	end
 end

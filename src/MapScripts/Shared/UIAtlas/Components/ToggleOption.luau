@@ -2,10 +2,12 @@
 
 local RepS = game:GetService("ReplicatedStorage")
 
-local Components = require(RepS.HarukaModules.Shared.UIAtlas.Vanilla)
-local Fusion = require(RepS.HarukaModules.Shared.Fusion)
+local Components = require(RepS.HarukaShared.Shared.UIAtlas.HarukaComponents)
+local Fusion = require(RepS.HarukaShared.Shared.Fusion)
 
 local Children = Fusion.Children
+
+local MapLib = game.GetMapLib:Invoke()()
 
 local fromScale = UDim2.fromScale
 local udNew = UDim.new
@@ -14,37 +16,43 @@ local newTweenInfo = TweenInfo.new
 local fromRGB = Color3.fromRGB
 
 local Texts = {
-    Waters = "Waters",
-    Lights = "Self-Light",
-    Shadows = "Shadows",
-    Shaders = "Shaders",
+    Waters = "Fluid",
+    Lights = "Light UP",
+    Shadows = "Fog",
+    Shaders = "Shader FXs",
     SkipBtns = "Auto Btns",
-    InfAir = "Inf Air",
-    ForceSpeed = "Force Speed",
-    ForceJump = "Force Jump"
+    InfAir = "Safe Fluid",
+    ForceSpeed = "Keep Speed",
+    ForceJump = "Keep Jump",
+    DisableKillbrick = "Killbricks",
+    ShowMedals = "Show Medals"
 }
 
-local function ToggleOption(id: string, self: table) : Frame
-    local scope = self.scope :: table
+return function (scope: Fusion.Scope, props: {
+    ToggleId: string
+
+}, self: table) : Frame
+
+    local isSelecting = Fusion.Value(scope, false)
 
     return Components.Frame(scope, {
-        Name = "ToggleOption",
-        Size = fromScale(1, 0.12),
+        Name = "ToggleOption_"..props.ToggleId,
+        Size = fromScale(0.9, 0.11),
+        LayoutOrder = 1,
 
         [Children] = {
-            Components.UIAspectRatioConstraint(scope, 6.449),
+            Components.UIAspectRatioConstraint(scope, 6.29),
 
             Components.TextLabel(scope, {
                 Name = "Title",
                 Size = fromScale(0.6, 1),
                 TextXAlignment = Enum.TextXAlignment.Left,
-                Text = Texts[id],
+                Text = Texts[props.ToggleId],
 
                 [Children] = {
-                    Fusion.New(scope, "UIPadding")({
-                        PaddingBottom = udNew(0.1, 0),
-                        PaddingTop = udNew(0.1, 0),
-                        PaddingLeft = udNew(0.03, 0)
+                    Components.UIPadding(scope, {
+                        PaddingLeft = udNew(0.03, 0),
+                        PaddingRight = udNew(0.03, 0)
                     })
                 }
             }),
@@ -54,28 +62,47 @@ local function ToggleOption(id: string, self: table) : Frame
                 Position = fromScale(0.65, 0.5),
                 Size = fromScale(0.35, 0.7),
                 BackgroundColor3 = fromRGB(),
-                BackgroundTransparency = 0.5,
+                BackgroundTransparency = 0,
 
                 [Children] = {
                     Components.RoundUICorner(scope),
                     Components.HoverImageButton(scope, {
-                        Name = id,
                         ZIndex = 3,
 
                         [Fusion.OnEvent("MouseButton1Click")] = function()
-                            self.inputs[id]:set(not Fusion.peek(self.inputs[id]))
+                            self.inputs[props.ToggleId]:set(not Fusion.peek(self.inputs[props.ToggleId]))
+
+                            local result = Fusion.peek(self.inputs[props.ToggleId])
+
+                            MapLib:Alert(`[Fallen Panel] {Texts[props.ToggleId]} has set to {if result then "true" else "false"}`, if result then "green" else "red", 3)
+                        end,
+                        [Fusion.OnEvent("MouseEnter")] = function()
+                            isSelecting:set(true)
+                        end,
+                        [Fusion.OnEvent("MouseLeave")] = function()
+                            isSelecting:set(false)
                         end
                     }),
+                    Components.UIStroke(scope, {
+                        Thickness = 2,
+
+                        Enabled = Fusion.Computed(scope, function(use: Fusion.Use)
+                            return use(isSelecting)
+                        end)
+                    }),
+
+
                     Components.Frame(scope, {
+                        Name = "Switch",
                         AnchorPoint = v2New(),
                         Size = fromScale(0.5, 1),
                         BackgroundTransparency = 0,
 
                         BackgroundColor3 = Fusion.Tween(scope, Fusion.Computed(scope, function(use: Fusion.Use)
-                            return if not use(self.inputs[id]) then fromRGB(255, 85, 127) else fromRGB(76, 152, 113)
+                            return if not use(self.inputs[props.ToggleId]) then Color3.fromHex('#ff6b81') else Color3.fromHex('#2ed573')
                         end), newTweenInfo(0.2)),
                         Position = Fusion.Tween(scope, Fusion.Computed(scope, function(use: Fusion.Use)
-                            return if use(self.inputs[id]) then fromScale(0.5, 0) else fromScale(0, 0)
+                            return if use(self.inputs[props.ToggleId]) then fromScale(0.5, 0) else fromScale(0, 0)
                         end), newTweenInfo(0.2)),
 
                         [Children] = { Components.RoundUICorner(scope) }
@@ -85,5 +112,3 @@ local function ToggleOption(id: string, self: table) : Frame
         }
     })
 end
-
-return ToggleOption

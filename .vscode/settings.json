@@ -14,9 +14,7 @@
         "**/.hg": true,
         "**/CVS": true,
         "**/.DS_Store": true,
-        "**/Thumbs.db": true,
-
-        "src/character/Health.server.luau": true
+        "**/Thumbs.db": true
     },
     "stylua.targetReleaseVersion": "latest"
 }

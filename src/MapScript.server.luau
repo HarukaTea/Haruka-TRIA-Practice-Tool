@@ -10,14 +10,14 @@ local RepS = game:GetService("ReplicatedStorage")
 
 
 --// Setup packages
-if RepS:FindFirstChild("HarukaModules") then RepS.HarukaModules:Destroy() end
+if RepS:FindFirstChild("HarukaShared") then RepS.HarukaShared:Destroy() end
 
 local folder = Instance.new("Folder")
-folder.Name = "HarukaModules"
+folder.Name = "HarukaShared"
 folder.Parent = RepS
 map.Shared.Parent = folder
 
-RepS:SetAttribute("HarukaModulesLoaded", true)
+RepS:SetAttribute("HarukaSharedLoaded", true)
 
 
 
@@ -31,11 +31,13 @@ for _, plr: Player in players do
 	if plrGui:FindFirstChild("HarukaPanel") then plrGui.HarukaPanel:Destroy() end
 	local screenGui = Instance.new("ScreenGui")
 	screenGui.Name = "HarukaPanel"
+	screenGui.AutoLocalize = false
+	screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 	screenGui.ClipToDeviceSafeArea = false
 	screenGui.IgnoreGuiInset = true
 	screenGui.ResetOnSpawn = false
 	screenGui.ScreenInsets = Enum.ScreenInsets.None
-	screenGui.DisplayOrder = 100
+	screenGui.DisplayOrder = 999
 	screenGui.Parent = plr.PlayerGui
 
 	map.Projectiles.HarukaPanel:Clone().Parent = screenGui
@@ -43,11 +45,17 @@ for _, plr: Player in players do
 	map.Projectiles.HarukaPostStroke:Clone().Parent = screenGui
 end
 
-MapLib:Alert("Fallen Practice Tools Loaded, Good Luck!", "white", 5.99)
+MapLib:Alert("Fallen Practice Tools V1.1 Loaded!", "green", 5.99)
+task.delay(1.599, function()
+	MapLib:Alert("Good Luck on Your Practice Journey!", "green", 5.99)
+end)
+task.delay(1.599 * 2, function()
+	MapLib:Alert("Practice Tools may not work properly in Mobile, Sorry about that!", "yellow", 5.99)
+end)
 
 
 --// Clear
 local function roundEnded()
-	RepS:SetAttribute("HarukaModulesLoaded", nil)
+	RepS:SetAttribute("HarukaSharedLoaded", nil)
 end
 MapLib.RoundEnding:Once(roundEnded)

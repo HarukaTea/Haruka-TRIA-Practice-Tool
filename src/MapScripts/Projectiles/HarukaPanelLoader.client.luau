@@ -1,16 +1,15 @@
 require(game:GetService("ServerScriptService").Runtime):Init()
 
 local Players = game:GetService("Players")
-local RS = game:GetService("RunService")
 local RepS = game:GetService("ReplicatedStorage")
 local UIS = game:GetService("UserInputService")
 local SG = game:GetService("StarterGui")
 
 local plr = Players.LocalPlayer
 
-repeat RS.Heartbeat:Wait() until RepS:GetAttribute("HarukaModulesLoaded")
+repeat task.wait() until RepS:GetAttribute("HarukaSharedLoaded")
 
-local HarukaLib = require(RepS.HarukaModules.Shared.HarukaLib)
+local HarukaLib = require(RepS.HarukaShared.Shared.HarukaLib)
 
 --// Panel, Start!
 require(script.Parent.HarukaPanel)(plr)
@@ -18,12 +17,20 @@ require(script.Parent.HarukaPanel)(plr)
 
 
 local function placeNoclip()
-    if plr.Backpack:FindFirstChild("Noclip") then return end
+    local check = false
+    for _, tool: Tool in plr.Backpack:GetChildren() do
+        if tool:IsA("HopperBin") and tool:HasTag("HarukaProjectile") then
+            check = true
+            break
+        end
+    end
+    if check then return end
+
 
     local noclip = Instance.new("HopperBin")
     noclip.Name = "Noclip"
     noclip:AddTag("HarukaProjectile")
-    noclip:SetAttribute("Speed", 60)
+    noclip:SetAttribute("Speed", RepS:GetAttribute("HARUKA_GlobalNoclipSpeed") or 60)
 
     local tool = noclip
     local selected = false
@@ -64,11 +71,15 @@ local function placeNoclip()
         if char then
             local humanoid = char:WaitForChild("Humanoid")
             local HRP = humanoid.RootPart
+            local head = char:WaitForChild("Head")
             local camera = workspace.CurrentCamera
 
             selected = true
             HRP.Anchored = true
             humanoid.PlatformStand = true
+
+            HRP.CanTouch = false
+            head.CanTouch = false
 
             lastUpdate = tick()
 
@@ -86,6 +97,9 @@ local function placeNoclip()
             HRP.Anchored = false
             HRP.Velocity = v3New()
             humanoid.PlatformStand = false
+
+            HRP.CanTouch = true
+            head.CanTouch = true
         end
     end
 

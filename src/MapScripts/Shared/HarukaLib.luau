@@ -1,51 +1,19 @@
 --!nocheck
 
 local RunService = game:GetService("RunService")
-local RepS = game:GetService("ReplicatedStorage")
-local TweenService = game:GetService("TweenService")
-
-local Promise = require(RepS.HarukaModules.Shared.Promise)
 
 local HarukaLib = {}
 
+--[[
+	Inspired by `Fusion.Hydrate`, it will add a tracker to the given props/attrs,
+	and call it funcs when the value of the prop/attr is changed.
 
-function HarukaLib:AddAttr(obj: Instance, attribute: string, val: number)
-	if obj:GetAttribute(attribute) == nil then obj:SetAttribute(attribute, 0) end
-
-	obj:SetAttribute(attribute, obj:GetAttribute(attribute) + val)
-end
-
-
-function HarukaLib:ClearAllAttributes(obj: Instance)
-	for attribute, _ in obj:GetAttributes() do obj:SetAttribute(attribute, nil) end
-end
-
-
-function HarukaLib:IsInRegion(position: Vector3, regions: table) : BasePart
-	local region: BasePart = nil
-
-	for _, child: BasePart in regions do
-		if not child:IsA("BasePart") then continue end
-
-		local point = child.CFrame:PointToObjectSpace(position)
-
-		if math.abs(point.X) < child.Size.X / 2
-			and math.abs(point.Y) < child.Size.Y / 2
-			and math.abs(point.Z) < child.Size.Z / 2 then
-
-			region = child
-			break
-		end
-	end
-
-	return region
-end
-
-
+	Return a function to destroy the tracker.
+]]
 function HarukaLib:Hydrate(obj: Instance, props: table)
 	local Add, Empty = HarukaLib.Bin()
 
-	for prop, func in props do
+	for prop: string, func in props do
 		if string.find(prop, "Attr") then
 			local _, endPos = string.find(prop, "Attr")
 			local attr = string.sub(prop, endPos + 2)
@@ -73,6 +41,11 @@ end
 
 
 
+--[[
+	Inspired by `Maid`, and `Fusion.doCleanup`, you can add anything to the bin.
+
+	Return a function to destroy the items inside the bin, bin can reused.
+]]
 function HarukaLib.Bin()
 	local bin = {}
 
@@ -96,6 +69,9 @@ function HarukaLib.Bin()
 			elseif typeof(item.Destroy) == "function" then
 				item:Destroy()
 
+			elseif typeof(item.Cancel) == "function" then
+				item:Cancel()
+
 			--- cancel any exist promises
 			elseif getmetatable(item) then
 				if item.prototype then item:cancel() end
@@ -116,13 +92,16 @@ function HarukaLib.Bin()
 		return item
 
 	end, function()
-		doCleanup(bin)
+		pcall(doCleanup, bin)
 
 		table.clear(bin)
 	end
 end
 
 
+--[[
+	Inspired by `Timer`, just like `window.setInterval` in javascript
+]]
 function HarukaLib.Clock(tickTime: number, func: () -> ())
 	local nowTime = 0
 	local dropTime = tickTime * 10
@@ -147,76 +126,4 @@ function HarukaLib.Clock(tickTime: number, func: () -> ())
 end
 
 
-function HarukaLib:UITweenOut(ui: GuiObject, delaySec: number?)
-	delaySec = delaySec or 0
-
-	local transparencyProperties = {
-		"BackgroundTransparency",
-		"TextTransparency",
-		"TextStrokeTransparency",
-		"Transparency",
-		"ImageTransparency",
-		"GroupTransparency",
-		"ScrollBarImageTransparency"
-	}
-	local tweenObjs = ui:GetDescendants()
-	table.insert(tweenObjs, ui)
-
-
-	local function _tweenGoal(obj: GuiObject, attr: string, tweenProps: table)
-		if attr == "Transparency" and not obj:IsA("UIStroke") then return end
-
-		pcall(function()
-			local hasAttr = obj[attr]
-
-			if hasAttr then tweenProps[attr] = 1 end
-		end)
-		pcall(function()
-			obj.Interactable = false
-		end)
-	end
-	local function _startTween(obj: GuiObject, tweenProps: table)
-		if not obj then return end
-		if not obj.Parent then return end
-
-		TweenService:Create(obj, TweenInfo.new(1), tweenProps):Play()
-	end
-
-	for _, obj in tweenObjs do
-		local tweenProps = {}
-		for _, attr in transparencyProperties do
-			_tweenGoal(obj, attr, tweenProps)
-		end
-
-		if delaySec > 0 then
-			Promise.delay(delaySec):andThenCall(_startTween, obj, tweenProps)
-		else
-			_startTween(obj, tweenProps)
-		end
-	end
-end
-
-
-function HarukaLib:CombineRbxId(id: string?) : string
-    if not id then
-        warn("[ClientUtil]: Invalid Id")
-        return "rbxassetid://0"
-    end
-
-    return "rbxassetid://".. id
-end
-
-
-function HarukaLib:ConvertTime(num: number) : string
-	local ms = num * 1000
-	local minutes = math.floor(ms / 60000)
-
-	ms %= 60000
-	local seconds = math.floor(ms / 1000)
-
-	ms %= 1000
-
-	return string.format("%d:%02d.%03d", minutes, seconds, ms)
-end
-
-return HarukaLib
+return table.freeze(HarukaLib)

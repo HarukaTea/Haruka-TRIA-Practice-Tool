@@ -1,12 +1,13 @@
 --!nocheck
 
+local CollectionService = game:GetService("CollectionService")
 local CAS = game:GetService("ContextActionService")
 local Lighting = game:GetService("Lighting")
 local RepS = game:GetService("ReplicatedStorage")
 
-local HarukaLib = require(RepS.HarukaModules.Shared.HarukaLib)
+local Fusion = require(RepS.HarukaShared.Shared.Fusion)
 
-local Fusion = require(RepS.HarukaModules.Shared.Fusion)
+local MedalMarker = require(RepS.HarukaShared.Shared.UIAtlas.Components.MedalMarker)
 
 local Observer, peek = Fusion.Observer, Fusion.peek
 
@@ -29,23 +30,42 @@ return function (self: table)
     self.panelOpen = Value(false)
 
     self.inputs = {
-        Speed = Value("20"),
+        Speed = Value(20),
         ForceSpeed = Value(false),
 
-        Jump = Value("50"),
+        Jump = Value(50),
         ForceJump = Value(false),
 
-        Noclip = Value("60"),
+        Noclip = Value(60),
         Waters = Value(true),
         Lights = Value(false),
         Shadows = Value(true),
         Shaders = Value(true),
+        DisableKillbrick = Value(true),
+        ShowMedals = Value(false),
 
-        Buttons = Value("1"),
+        Buttons = Value(1),
         SkipBtns = Value(false),
         InfAir = Value(false),
     }
+
+    local checkPointsContainer = instanceNew("Folder")
+    checkPointsContainer.Name = "HARUKA_CheckPoints"
+    checkPointsContainer.Parent = self.plr:FindFirstChildOfClass("PlayerGui").HarukaPanel
+
+    self.checkPointsContainer = checkPointsContainer
     self.checkPoints = Value({})
+
+    self.charRespawned = Instance.new("BindableEvent")
+
+    --// checkpoints connection
+
+    local function _updateChecks()
+        wait()
+        self.checkPoints:set(checkPointsContainer:GetChildren())
+    end
+    table.insert(scope, checkPointsContainer.ChildAdded:Connect(_updateChecks))
+    table.insert(scope, checkPointsContainer.ChildRemoved:Connect(_updateChecks))
 
     --// Actions
 
@@ -59,16 +79,17 @@ return function (self: table)
     local function _addCheckPoint(_, inputState: Enum.UserInputState)
         if inputState ~= Enum.UserInputState.Begin then return end
 
-        local cTable = Fusion.peek(self.checkPoints)
+        local checkPoint = Instance.new("CFrameValue")
+        checkPoint.Value = self.plr.Character.PrimaryPart.CFrame
+        checkPoint.Name = "_Checkpoint"
+        checkPoint.Parent = self.checkPointsContainer
 
-        cTable[#cTable + 1] = self.plr.Character.PrimaryPart.CFrame
-        self.checkPoints:set(cTable)
-
-        MapLib:Alert("Checkpoint added!", "white", 3)
+        MapLib:Alert("[Fallen Panel] Checkpoint Added!", "green", 3)
     end
     CAS:BindAction("HarukaPanelAddCheckpoint", _addCheckPoint, false, Enum.KeyCode.X)
 
     --// Connections
+
     local inputs = self.inputs
 
     local speedObserver = Observer(scope, inputs.Speed)
@@ -84,79 +105,91 @@ return function (self: table)
     local shadersObserver = Observer(scope, inputs.Shaders)
     local skipBtnsObserver = Observer(scope, inputs.SkipBtns)
     local infAirObserver = Observer(scope, inputs.InfAir)
+    local disableKillbrickObserver = Observer(scope, inputs.DisableKillbrick)
+    local medalsObserver = Observer(scope, inputs.ShowMedals)
 
     --// Speed
-    local function _calSpeed(speed: string) : number
-        if speed == "" then return 20 end
-        if not tonumber(speed) then return 20 end
-
-        return tonumber(speed)
+    local function _changeSpeed()
+        self.plr.Character.Humanoid.WalkSpeed = peek(inputs.Speed)
     end
-    speedObserver:onChange(function()
-        self.plr.Character.Humanoid.WalkSpeed = _calSpeed(peek(inputs.Speed))
-    end)
+    speedObserver:onChange(_changeSpeed)
+
 
     --// Force speed detector
     local forceSpeedConnection: RBXScriptConnection = nil
+    local function _clearSpeedConns()
+        if forceSpeedConnection then
+            forceSpeedConnection:Disconnect()
+            forceSpeedConnection = nil
+        end
+    end
+    local function _enableForceSpeed()
+        _clearSpeedConns()
+
+        forceSpeedConnection = self.plr.Character.Humanoid:GetPropertyChangedSignal("WalkSpeed"):Connect(function()
+            local humanoid = self.plr.Character.Humanoid :: Humanoid
+
+            if humanoid.WalkSpeed < peek(inputs.Speed) then
+                humanoid.WalkSpeed = peek(inputs.Speed)
+            end
+        end)
+    end
     forceSpeedObserver:onChange(function()
         local isForce = peek(inputs.ForceSpeed) :: boolean
 
         if isForce then
-            if forceSpeedConnection then forceSpeedConnection:Disconnect() end
-
-            forceSpeedConnection = self.plr.Character.Humanoid:GetPropertyChangedSignal("WalkSpeed"):Connect(function()
-                local humanoid = self.plr.Character.Humanoid :: Humanoid
-
-                if humanoid.WalkSpeed < _calSpeed(peek(inputs.Speed)) then
-                    humanoid.WalkSpeed = _calSpeed(peek(inputs.Speed))
-                end
-            end)
+            _enableForceSpeed()
         else
-            if forceSpeedConnection then forceSpeedConnection:Disconnect() end
+            _clearSpeedConns()
         end
     end)
 
-    --// Jump detector
-    local function _calJump(jump: string)
-        if jump == "" then return 50 end
-        if not tonumber(jump) then return 50 end
 
-        return tonumber(jump)
+    --// Jump detector
+    local function _changeJump()
+        self.plr.Character.Humanoid.JumpPower = peek(inputs.Jump)
     end
-    jumpObserver:onChange(function()
-        self.plr.Character.Humanoid.JumpPower = _calJump(peek(inputs.Jump))
-    end)
+    jumpObserver:onChange(_changeJump)
+
 
     --// Force jump detector
     local forceJumpConnection: RBXScriptConnection = nil
+    local function _clearJumpConns()
+        if forceJumpConnection then
+            forceJumpConnection:Disconnect()
+            forceJumpConnection = nil
+        end
+    end
+    local function _enableForceJump()
+        _clearJumpConns()
+
+        forceJumpConnection = self.plr.Character.Humanoid:GetPropertyChangedSignal("JumpPower"):Connect(function()
+            local humanoid = self.plr.Character.Humanoid :: Humanoid
+
+            if humanoid.JumpPower < peek(inputs.Jump) then
+                humanoid.JumpPower = peek(inputs.Jump)
+            end
+        end)
+    end
     forceJumpObserver:onChange(function()
         local isForce = peek(inputs.ForceJump) :: boolean
 
         if isForce then
-            if forceJumpConnection then forceJumpConnection:Disconnect() end
-
-            forceJumpConnection = self.plr.Character.Humanoid:GetPropertyChangedSignal("JumpPower"):Connect(function()
-                local humanoid = self.plr.Character.Humanoid :: Humanoid
-
-                if humanoid.JumpPower < _calJump(peek(inputs.Jump)) then
-                    humanoid.JumpPower = _calJump(peek(inputs.Jump))
-                end
-            end)
+            _enableForceJump()
         else
-            if forceJumpConnection then forceJumpConnection:Disconnect() end
+            _clearJumpConns()
         end
     end)
 
-    --// Noclip detector
-    local function _calNoclipSpeed(speed: string)
-        if speed == "" then return 60 end
-        if not tonumber(speed) then return 60 end
 
-        return tonumber(speed)
+    --// Noclip detector
+    local function _changeNoclip()
+        self.plr.Backpack.Noclip:SetAttribute("Speed", peek(inputs.Noclip))
+
+        RepS:SetAttribute("HARUKA_GlobalNoclipSpeed", peek(inputs.Noclip))
     end
-    noclipObserver:onChange(function()
-        self.plr.Backpack.Noclip:SetAttribute("Speed", _calNoclipSpeed(peek(inputs.Noclip)))
-    end)
+    noclipObserver:onChange(_changeNoclip)
+
 
     --// Water detector
     local waterConnection: RBXScriptConnection = nil
@@ -167,9 +200,15 @@ return function (self: table)
             water.Parent = RepS
         end
     end
+    local function _clearWaterConns()
+        if waterConnection then
+            waterConnection:Disconnect()
+            waterConnection = nil
+        end
+    end
     watersObserver:onChange(function()
         if peek(inputs.Waters) == false then
-            if waterConnection then waterConnection:Disconnect() end
+            _clearWaterConns()
 
             for _, water in workspace:GetDescendants() do
                 _detectWater(water)
@@ -181,7 +220,7 @@ return function (self: table)
             end)
 
         else
-            if waterConnection then waterConnection:Disconnect() end
+            _clearWaterConns()
 
             for water, parent in waterDetected do
                 water.Parent = if parent then parent else nil
@@ -209,26 +248,41 @@ return function (self: table)
     end)
 
     --// Shadows detector
-    local oriStart, oriEnd = Value(Lighting.FogStart), Value(Lighting.FogEnd)
-    HarukaLib:Hydrate(Lighting, {
-        ["Prop-FogStart"] = function(newStart)
-            if newStart ~= 1599 * 40 ^ 2 then oriStart:set(newStart) end
-        end,
-        ["Prop-FogEnd"] = function(newEnd)
-            if newEnd ~= 1599 * 40 ^ 2 then oriEnd:set(newEnd) end
+    local shadowsConnection: RBXScriptConnection = nil
+    local shadowsConnection2: RBXScriptConnection = nil
+    local function _clearShadowsConns()
+        if shadowsConnection then
+            shadowsConnection:Disconnect()
+            shadowsConnection = nil
         end
-    })
+        if shadowsConnection2 then
+            shadowsConnection2:Disconnect()
+            shadowsConnection2 = nil
+        end
+    end
     shadowsObserver:onChange(function()
         local state = peek(inputs.Shadows) :: boolean
 
         Lighting.GlobalShadows = state
 
         if not state then
+            _clearShadowsConns()
+
             Lighting.FogEnd = 1599 * 40 ^ 2
             Lighting.FogStart = 1599 * 40 ^ 2
+
+            shadowsConnection = Lighting:GetPropertyChangedSignal("FogStart"):Connect(function()
+                wait()
+                Lighting.FogStart = 1599 * 40 ^ 2
+            end)
+            shadowsConnection2 = Lighting:GetPropertyChangedSignal("FogEnd"):Connect(function()
+                wait()
+                Lighting.FogEnd = 1599 * 40 ^ 2
+            end)
         else
-            Lighting.FogEnd = peek(oriEnd)
-            Lighting.FogStart = peek(oriStart)
+            _clearShadowsConns()
+
+            MapLib:Alert("[Fallen Panel] Changes will be applied in next round.", "green", 3)
         end
     end)
 
@@ -262,9 +316,15 @@ return function (self: table)
             __isShader()
         end
     end
+    local function _clearShaderConns()
+        if shaderConnection then
+            shaderConnection:Disconnect()
+            shaderConnection = nil
+        end
+    end
     shadersObserver:onChange(function()
         if peek(inputs.Shaders) then
-            if shaderConnection then shaderConnection:Disconnect() end
+            _clearShaderConns()
 
             for _, shader in shaders do
                 if shader and shader.Parent then shader.Enabled = true end
@@ -275,7 +335,7 @@ return function (self: table)
             clear(shaders)
             clear(shaderConnections)
         else
-            if shaderConnection then shaderConnection:Disconnect() end
+            _clearShaderConns()
 
             for _, shader in Lighting:GetDescendants() do
                 _detectShader(shader)
@@ -287,8 +347,96 @@ return function (self: table)
         end
     end)
 
+    --// disable killbrick detector
+    local disableKillbrickConnection: RBXScriptConnection = nil
+    local killbricksDetected = {}
+    local function _detectKillbrick(part: Instance)
+        if part:GetAttribute("_action") == "Kill" then
+            part:SetAttribute("_action", nil)
+
+            table.insert(killbricksDetected, part)
+        end
+    end
+    local function _clearKillbrickConns()
+        if disableKillbrickConnection then
+            disableKillbrickConnection:Disconnect()
+            disableKillbrickConnection = nil
+        end
+    end
+    disableKillbrickObserver:onChange(function()
+        if not peek(inputs.DisableKillbrick) then
+            _clearKillbrickConns()
+
+            for _, part: Instance in workspace:GetDescendants() do
+                _detectKillbrick(part)
+            end
+
+            disableKillbrickConnection = workspace.DescendantAdded:Connect(function(added: Instance)
+                wait()
+                _detectKillbrick(added)
+            end)
+        else
+            _clearKillbrickConns()
+
+            for _, part: Instance in killbricksDetected do
+                if not part then continue end
+                if not part.Parent then continue end
+
+                part:SetAttribute("_action", "Kill")
+            end
+
+            clear(killbricksDetected)
+        end
+    end)
+
+
+    --// medal detector
+    local showMedalConnection: RBXScriptConnection = nil
+    local function _clearMedalConns()
+        if showMedalConnection then
+            showMedalConnection:Disconnect()
+            showMedalConnection = nil
+        end
+    end
+    local function _detectMedal(medal: Instance)
+        if (medal:IsA("BasePart") or medal:IsA("UnionOperation")) and medal.Name == "Medal" then
+            local medalMarker = MedalMarker(scope, {
+                Adornee = medal
+            }, self)
+
+            medalMarker:AddTag("HARUKA_MedalMarker")
+        end
+    end
+    medalsObserver:onChange(function()
+        if peek(inputs.ShowMedals) then
+            _clearMedalConns()
+
+            for _, medal: Instance in workspace:GetDescendants() do
+                _detectMedal(medal)
+            end
+
+            showMedalConnection = workspace.DescendantAdded:Connect(function(added: Instance)
+                _detectMedal(added)
+            end)
+
+        else
+            _clearMedalConns()
+
+            for _, marker: BillboardGui in CollectionService:GetTagged("HARUKA_MedalMarker") do
+                marker:Destroy()
+            end
+        end
+    end)
+
+
     --// Button detector
     local btnConnection: RBXScriptConnection = nil
+    local function _clearBtnConns()
+        if btnConnection then
+            btnConnection:Disconnect()
+            btnConnection = nil
+        end
+    end
     function self:_detectButton(btn: Model)
         if not btn:IsA("Model") then return end
 
@@ -300,7 +448,7 @@ return function (self: table)
             if tonumber(index) > tonumber(maxBtns) then return end
 
             for _, child in btn:GetDescendants() do
-                if child:IsA("BasePart") or child:IsA("UnionOperation") then
+                if child:IsA("BasePart") or child:IsA("UnionOperation") or child:IsA("CornerWedgePart") then
                     child.Transparency = 1
                     child.CanCollide = false
                 end
@@ -312,7 +460,9 @@ return function (self: table)
     end
     skipBtnsObserver:onChange(function()
         if peek(inputs.SkipBtns) then
-            for _, btn in workspace:GetDescendants() do
+            _clearBtnConns()
+
+            for _, btn: Instance in workspace:GetDescendants() do
                 self:_detectButton(btn)
             end
 
@@ -320,9 +470,8 @@ return function (self: table)
                 wait(1)
                 self:_detectButton(added)
             end)
-
         else
-            if btnConnection then btnConnection:Disconnect() end
+            _clearBtnConns()
         end
     end)
 
@@ -337,8 +486,16 @@ return function (self: table)
             water:SetAttribute("Type", "water")
         end
     end
+    local function _clearInfAirConns()
+        if infAirConnection then
+            infAirConnection:Disconnect()
+            infAirConnection = nil
+        end
+    end
     infAirObserver:onChange(function()
         if peek(inputs.InfAir) then
+            _clearInfAirConns()
+
             for _, water in workspace:GetDescendants() do
                 _detectWaterState(water)
             end
@@ -349,12 +506,30 @@ return function (self: table)
             end)
 
         else
-            if infAirConnection then infAirConnection:Disconnect() end
+            _clearInfAirConns()
 
             for water, attr in changedWaters do
                 if water and water.Parent then water:SetAttribute("Type", attr) end
             end
+
             clear(changedWaters)
         end
     end)
+
+
+
+    ---// a new character just added
+    table.insert(scope, self.plr.CharacterAdded:Connect(function(char: Model)
+        repeat wait() until char.PrimaryPart
+        repeat wait() until char:WaitForChild("Humanoid", 999)
+
+        wait()
+        self.charRespawned:Fire()
+    end))
+    table.insert(scope, self.charRespawned.Event:Connect(function()
+        _changeSpeed()
+        _changeJump()
+        _enableForceJump()
+        _enableForceSpeed()
+    end))
 end
