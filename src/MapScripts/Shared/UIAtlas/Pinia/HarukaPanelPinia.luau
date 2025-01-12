@@ -7,7 +7,7 @@ local RepS = game:GetService("ReplicatedStorage")
 
 local Fusion = require(RepS.HarukaShared.Shared.Fusion)
 
-local MedalMarker = require(RepS.HarukaShared.Shared.UIAtlas.Components.MedalMarker)
+local MedalMarker = require(RepS.HarukaShared.UIAtlas.Components.MedalMarker)
 
 local Observer, peek = Fusion.Observer, Fusion.peek
 
@@ -231,17 +231,19 @@ return function (self: table)
     end)
 
     --// Self-light detector
+    local function _enableLights(char: Model)
+        if char.PrimaryPart:FindFirstChild("SelfLight") then char.PrimaryPart.SelfLight:Destroy() end
+
+        local light = instanceNew("PointLight")
+        light.Range = 32
+        light.Name = "SelfLight"
+        light.Parent = char.PrimaryPart
+    end
     lightsObserver:onChange(function()
         local char = self.plr.Character :: Model
 
         if peek(inputs.Lights) then
-            if char.PrimaryPart:FindFirstChild("SelfLight") then char.PrimaryPart.SelfLight:Destroy() end
-
-            local light = instanceNew("PointLight")
-            light.Range = 32
-            light.Name = "SelfLight"
-            light.Parent = char.PrimaryPart
-
+            _enableLights(char)
         else
             if char.PrimaryPart:FindFirstChild("SelfLight") then char.PrimaryPart.SelfLight:Destroy() end
         end
@@ -529,7 +531,9 @@ return function (self: table)
     table.insert(scope, self.charRespawned.Event:Connect(function()
         _changeSpeed()
         _changeJump()
-        _enableForceJump()
-        _enableForceSpeed()
+
+        if peek(inputs.ForceJump) then _enableForceJump() end
+        if peek(inputs.ForceSpeed) then _enableForceSpeed() end
+        if peek(inputs.Lights) then _enableLights(self.plr.Character) end
     end))
 end

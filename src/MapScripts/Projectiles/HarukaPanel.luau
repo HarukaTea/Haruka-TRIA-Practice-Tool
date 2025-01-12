@@ -2,14 +2,14 @@
 
 local RepS = game:GetService("ReplicatedStorage")
 
-local Components = require(RepS.HarukaShared.Shared.UIAtlas.HarukaComponents)
+local Components = require(RepS.HarukaShared.UIAtlas.HarukaComponents)
 local Fusion = require(RepS.HarukaShared.Shared.Fusion)
 
-local Pinia = require(RepS.HarukaShared.Shared.UIAtlas.Pinia.HarukaPanelPinia)
+local Pinia = require(RepS.HarukaShared.UIAtlas.Pinia.HarukaPanelPinia)
 
-local ButtonOption = require(RepS.HarukaShared.Shared.UIAtlas.Components.ButtonOption)
-local TypeOption = require(RepS.HarukaShared.Shared.UIAtlas.Components.TypeOption)
-local ToggleOption = require(RepS.HarukaShared.Shared.UIAtlas.Components.ToggleOption)
+local ButtonOption = require(RepS.HarukaShared.UIAtlas.Components.ButtonOption)
+local TypeOption = require(RepS.HarukaShared.UIAtlas.Components.TypeOption)
+local ToggleOption = require(RepS.HarukaShared.UIAtlas.Components.ToggleOption)
 
 local Children, Computed, OnEvent = Fusion.Children, Fusion.Computed, Fusion.OnEvent
 
@@ -38,7 +38,7 @@ return function (plr: Player)
                 Components.TextButton(scope, {
                     Name = "OpenBtn",
                     AnchorPoint = v2New(1, 0),
-                    Position = fromScale(0.99, -0.7),
+                    Position = fromScale(0.99, -0.5),
                     Size = fromScale(0.15, 0.5),
                     Text = "Fallen Panel (C)",
                     BackgroundTransparency = 0.2,
@@ -73,7 +73,7 @@ return function (plr: Player)
                 Components.Frame(scope, {
                     Name = "PanelBG",
                     AnchorPoint = v2New(1, 0),
-                    Position = fromScale(0.99, -6),
+                    Position = fromScale(0.99, -5.7),
                     BackgroundTransparency = 0.2,
                     Size = fromScale(0.15, 5),
                     AutoLocalize = false,

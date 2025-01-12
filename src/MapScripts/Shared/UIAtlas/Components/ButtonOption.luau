@@ -2,7 +2,7 @@
 
 local RepS = game:GetService("ReplicatedStorage")
 
-local Components = require(RepS.HarukaShared.Shared.UIAtlas.HarukaComponents)
+local Components = require(RepS.HarukaShared.UIAtlas.HarukaComponents)
 local Fusion = require(RepS.HarukaShared.Shared.Fusion)
 
 local MapLib = game.GetMapLib:Invoke()()
@@ -55,12 +55,12 @@ return function (scope: Fusion.Scope, props: {
                 checkPoint.Name = "_Checkpoint"
                 checkPoint.Parent = self.checkPointsContainer
 
-                MapLib:Alert(`[Fallen Panel] Checkpoint {index} Added!`, "green", 3)
+                MapLib:Alert(`[Fallen Panel] Checkpoint Added!`, "green", 3)
 
             elseif props.ButtonId == "ClearCheck" then
                 self.checkPointsContainer:ClearAllChildren()
 
-                MapLib:Alert("[Fallen Panel] Checkpoint Cleared!", "red", 3)
+                MapLib:Alert("[Fallen Panel] All Checkpoints Cleared!", "red", 3)
 
             elseif props.ButtonId == "CheckTP" then
                 self.plr.Character.PrimaryPart.CFrame = props.CheckPoint

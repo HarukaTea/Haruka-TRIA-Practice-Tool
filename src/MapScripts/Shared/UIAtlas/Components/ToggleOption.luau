@@ -2,7 +2,7 @@
 
 local RepS = game:GetService("ReplicatedStorage")
 
-local Components = require(RepS.HarukaShared.Shared.UIAtlas.HarukaComponents)
+local Components = require(RepS.HarukaShared.UIAtlas.HarukaComponents)
 local Fusion = require(RepS.HarukaShared.Shared.Fusion)
 
 local Children = Fusion.Children

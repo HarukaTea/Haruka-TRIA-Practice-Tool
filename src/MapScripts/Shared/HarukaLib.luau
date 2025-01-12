@@ -1,7 +1,5 @@
 --!nocheck
 
-local RunService = game:GetService("RunService")
-
 local HarukaLib = {}
 
 --[[
@@ -72,6 +70,9 @@ function HarukaLib.Bin()
 			elseif typeof(item.Cancel) == "function" then
 				item:Cancel()
 
+			elseif typeof(item.cancel) == "function" then
+				item:cancel()
+
 			--- cancel any exist promises
 			elseif getmetatable(item) then
 				if item.prototype then item:cancel() end
@@ -95,33 +96,6 @@ function HarukaLib.Bin()
 		pcall(doCleanup, bin)
 
 		table.clear(bin)
-	end
-end
-
-
---[[
-	Inspired by `Timer`, just like `window.setInterval` in javascript
-]]
-function HarukaLib.Clock(tickTime: number, func: () -> ())
-	local nowTime = 0
-	local dropTime = tickTime * 10
-
-	local connection = RunService.Heartbeat:Connect(function(deltaTime)
-		nowTime += deltaTime
-
-		if nowTime > dropTime then
-			nowTime = 0
-			func()
-
-		elseif nowTime > tickTime then
-			nowTime -= tickTime
-
-			func()
-		end
-	end)
-
-	return function ()
-		connection:Disconnect()
 	end
 end
 
