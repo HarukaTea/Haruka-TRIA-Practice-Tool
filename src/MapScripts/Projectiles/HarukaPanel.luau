@@ -1,20 +1,25 @@
 --!nocheck
 
+if script:IsDescendantOf(workspace) then return end
+
 local RepS = game:GetService("ReplicatedStorage")
 
 local Components = require(RepS.HarukaShared.UIAtlas.HarukaComponents)
 local Fusion = require(RepS.HarukaShared.Shared.Fusion)
+local HarukaLib = require(RepS.HarukaShared.Shared.HarukaLib)
 
 local Pinia = require(RepS.HarukaShared.UIAtlas.Pinia.HarukaPanelPinia)
 
 local ButtonOption = require(RepS.HarukaShared.UIAtlas.Components.ButtonOption)
 local TypeOption = require(RepS.HarukaShared.UIAtlas.Components.TypeOption)
 local ToggleOption = require(RepS.HarukaShared.UIAtlas.Components.ToggleOption)
+local TitleSection = require(RepS.HarukaShared.UIAtlas.Components.TitleSection)
 
 local Children, Computed, OnEvent = Fusion.Children, Fusion.Computed, Fusion.OnEvent
 
 local v2New = Vector2.new
 local fromScale = UDim2.fromScale
+
 
 return function (plr: Player)
     local self = {}
@@ -26,11 +31,27 @@ return function (plr: Player)
     local scope = self.scope :: Fusion.Scope
     local isSelecting = Fusion.Value(scope, false)
 
-    Components.HarukaScreenGui(scope, {
+
+    local device = HarukaLib:GetAccurateDevice()
+    local isMobile = false
+    if device == "Phone" then
+        isMobile = true
+    end
+
+    local BUTTON_POS = fromScale(0.99, -0.5)
+    local PANEL_POS = fromScale(0.99, -5.7)
+    if isMobile then
+        if device == "Phone" then
+            BUTTON_POS = fromScale(0.99, -3)
+            PANEL_POS = fromScale(0.99, -5.7 - 2.5)
+        end
+    end
+
+    self.UI = Components.HarukaScreenGui(scope, {
         Name = "HarukaPanel",
-        DisplayOrder = 999,
+        DisplayOrder = 15.99,
         AutoLocalize = false,
-        Parent = plr:FindFirstChildOfClass("PlayerGui").HarukaPanel,
+        Parent = script.Parent,
 
     }, {
         BottomProps = {
@@ -38,7 +59,7 @@ return function (plr: Player)
                 Components.TextButton(scope, {
                     Name = "OpenBtn",
                     AnchorPoint = v2New(1, 0),
-                    Position = fromScale(0.99, -0.5),
+                    Position = BUTTON_POS,
                     Size = fromScale(0.15, 0.5),
                     Text = "Fallen Panel (C)",
                     BackgroundTransparency = 0.2,
@@ -73,7 +94,7 @@ return function (plr: Player)
                 Components.Frame(scope, {
                     Name = "PanelBG",
                     AnchorPoint = v2New(1, 0),
-                    Position = fromScale(0.99, -5.7),
+                    Position = PANEL_POS,
                     BackgroundTransparency = 0.2,
                     Size = fromScale(0.15, 5),
                     AutoLocalize = false,
@@ -94,30 +115,40 @@ return function (plr: Player)
                             [Children] = {
                                 Components.PaddingFrame(scope, "AAA"),
 
+                                --- controls
+                                TitleSection(scope, { TitleId = "Controls", Order = 1, }, self),
 
-                                TypeOption(scope, { TypeId = "Speed" }, self),
-                                ToggleOption(scope, { ToggleId = "ForceSpeed" }, self),
+                                TypeOption(scope, { TypeId = "Speed", Order = 2, }, self),
+                                ToggleOption(scope, { ToggleId = "ForceSpeed", Order = 3, }, self),
 
-                                TypeOption(scope, { TypeId = "Jump" }, self),
-                                ToggleOption(scope, { ToggleId = "ForceJump" }, self),
+                                TypeOption(scope, { TypeId = "Jump", Order = 4, }, self),
+                                ToggleOption(scope, { ToggleId = "ForceJump", Order = 5, }, self),
 
-                                TypeOption(scope, { TypeId = "Noclip" }, self),
+                                TypeOption(scope, { TypeId = "Noclip", Order = 6, }, self),
 
-                                ToggleOption(scope, { ToggleId = "Waters" }, self),
-                                ToggleOption(scope, { ToggleId = "Lights" }, self),
-                                ToggleOption(scope, { ToggleId = "Shadows" }, self),
-                                ToggleOption(scope, { ToggleId = "Shaders" }, self),
-                                ToggleOption(scope, { ToggleId = "DisableKillbrick" }, self),
-                                ToggleOption(scope, { ToggleId = "ShowMedals" }, self),
+                                --- map
+                                TitleSection(scope, { TitleId = "Map", Order = 7, }, self),
 
-                                TypeOption(scope, { TypeId = "Buttons" }, self),
-                                ToggleOption(scope, { ToggleId = "SkipBtns" }, self),
-                                ButtonOption(scope, { ButtonId = "ActivateAllBtns" }, self),
+                                --ButtonOption(scope, { ButtonId = "TimeStopMap", Order = 8, }, self),
 
-                                ToggleOption(scope, { ToggleId = "InfAir" }, self),
+                                ToggleOption(scope, { ToggleId = "Waters", Order = 9, }, self),
+                                ToggleOption(scope, { ToggleId = "Lights", Order = 10, }, self),
+                                ToggleOption(scope, { ToggleId = "Shadows", Order = 11, }, self),
+                                ToggleOption(scope, { ToggleId = "Shaders", Order = 12, }, self),
+                                ToggleOption(scope, { ToggleId = "DisableKillbrick", Order = 13, }, self),
+                                ToggleOption(scope, { ToggleId = "ShowMedals", Order = 14, }, self),
 
-                                ButtonOption(scope, { ButtonId = "AddCheck" }, self),
-                                ButtonOption(scope, { ButtonId = "ClearCheck" }, self),
+                                TypeOption(scope, { TypeId = "Buttons", Order = 15, }, self),
+                                ToggleOption(scope, { ToggleId = "SkipBtns", Order = 16, }, self),
+                                ButtonOption(scope, { ButtonId = "ActivateAllBtns", Order = 17, }, self),
+
+                                ToggleOption(scope, { ToggleId = "InfAir", Order = 18, }, self),
+
+                                --- checkpoints
+                                TitleSection(scope, { TitleId = "Checkpoints", Order = 19, }, self),
+
+                                ButtonOption(scope, { ButtonId = "AddCheck", Order = 20, }, self),
+                                ButtonOption(scope, { ButtonId = "ClearCheck", Order = 21, }, self),
 
                                 Fusion.ForPairs(scope, self.checkPoints, function(_, localScope: table, index: number, checkPoint: CFrameValue)
                                     return index, ButtonOption(localScope, {

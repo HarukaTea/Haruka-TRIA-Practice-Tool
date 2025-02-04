@@ -1,5 +1,8 @@
 --!nocheck
 
+local GuiService = game:GetService("GuiService")
+local UIS = game:GetService("UserInputService")
+
 local HarukaLib = {}
 
 --[[
@@ -99,5 +102,32 @@ function HarukaLib.Bin()
 	end
 end
 
+
+--[[
+    Get the accurate device type
+]]
+function HarukaLib:GetAccurateDevice() : "PC" | "Xbox" | "PlayStation" | "Phone" | "Tablet" | "VR"
+	local device = "PC"
+
+	if GuiService:IsTenFootInterface() then
+		local key = Enum.KeyCode.ButtonA
+
+		if UIS:GetStringForKeyCode(key) == "ButtonA" then device = "Xbox" end
+		if UIS:GetStringForKeyCode(key) == "ButtonCross" then device = "PlayStation" end
+	end
+	if UIS.TouchEnabled then
+		local screenSize = workspace.CurrentCamera.ViewportSize
+
+		if screenSize.X < screenSize.Y then
+			if screenSize.X < 600 then device = "Phone" else device = "Tablet" end
+
+		elseif screenSize.X > screenSize.Y then
+			if screenSize.Y < 600 then device = "Phone" else device = "Tablet" end
+		end
+	end
+	if UIS.VREnabled then device = "VR" end
+
+	return device
+end
 
 return table.freeze(HarukaLib)

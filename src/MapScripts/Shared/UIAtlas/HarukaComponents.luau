@@ -128,10 +128,10 @@ function HarukaComponents.ScrollingFrame(scope: Fusion.Scope, props: table, list
 		BorderSizePixel = 0,
 		Size = fromScale(1, 1),
 
-		CanvasSize = Fusion.Computed(scope, function(use: Fusion.Use)
+		CanvasSize = Fusion.Computed(scope, function(use: Fusion.Use, _)
 			return if use(absContentSize).Y > use(absSize).Y then UDim2.fromOffset(0, use(absContentSize).Y + 23) else UDim2.fromOffset(0, 0)
 		end),
-		ScrollingEnabled = Fusion.Computed(scope, function(use: Fusion.Use)
+		ScrollingEnabled = Fusion.Computed(scope, function(use: Fusion.Use, _)
 			return if use(absContentSize).Y > use(absSize).Y then true else false
 		end),
 
@@ -216,6 +216,9 @@ function HarukaComponents.TextButton(scope: Fusion.Scope, props: table) : TextBu
 		TextColor3 = color3New(1, 1, 1),
 		TextScaled = true,
 		BorderSizePixel = 0,
+		TextStrokeColor3 = color3New(),
+		TextStrokeTransparency = 1,
+		Size = fromScale(1, 1),
 	})
 end
 
@@ -319,12 +322,12 @@ function HarukaComponents.HarukaFrame(scope: Fusion.Scope, props: table) : Frame
 end
 
 --[[
-	Return a default `BillboardGui`, with no light influence, global z-index, and no clipping, always on top
+	Return a default `BillboardGui`, with no light influence, and no clipping, always on top
 ]]
 function HarukaComponents.BillboardGui(scope: Fusion.Scope, props: table) : BillboardGui
 	return _createNewCompoent(scope, props, "BillboardGui", {
 		LightInfluence = 0,
-		ZIndexBehavior = Enum.ZIndexBehavior.Global,
+		ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
 		ClipsDescendants = false,
 		AlwaysOnTop = true,
 		ResetOnSpawn = false,

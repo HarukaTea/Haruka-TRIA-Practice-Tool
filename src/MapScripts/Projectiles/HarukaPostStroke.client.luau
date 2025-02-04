@@ -1,5 +1,7 @@
 --!nocheck
 
+if script:IsDescendantOf(workspace) then return end
+
 local Players = game:GetService("Players")
 
 local plr = Players.LocalPlayer

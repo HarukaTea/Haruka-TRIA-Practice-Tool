@@ -29,7 +29,8 @@ local Texts = {
 }
 
 return function (scope: Fusion.Scope, props: {
-    ToggleId: string
+    ToggleId: string,
+    Order: number,
 
 }, self: table) : Frame
 
@@ -38,7 +39,7 @@ return function (scope: Fusion.Scope, props: {
     return Components.Frame(scope, {
         Name = "ToggleOption_"..props.ToggleId,
         Size = fromScale(0.9, 0.11),
-        LayoutOrder = 1,
+        LayoutOrder = props.Order,
 
         [Children] = {
             Components.UIAspectRatioConstraint(scope, 6.29),

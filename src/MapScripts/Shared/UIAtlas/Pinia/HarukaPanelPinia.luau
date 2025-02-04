@@ -184,9 +184,7 @@ return function (self: table)
 
     --// Noclip detector
     local function _changeNoclip()
-        self.plr.Backpack.Noclip:SetAttribute("Speed", peek(inputs.Noclip))
-
-        RepS:SetAttribute("HARUKA_GlobalNoclipSpeed", peek(inputs.Noclip))
+        RepS:SetAttribute("_HARUKA_GlobalNoclipSpeed", peek(inputs.Noclip))
     end
     noclipObserver:onChange(_changeNoclip)
 

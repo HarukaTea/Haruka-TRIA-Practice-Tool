@@ -15,23 +15,25 @@ local fromRGB = Color3.fromRGB
 
 local Texts = {
     AddCheck = "Add Checkpoint (X)",
-    ClearCheck = "Clear Checks",
-    ActivateAllBtns = "Activate Buttons"
+    ClearCheck = "Clear All Checks",
+    ActivateAllBtns = "Activate Buttons",
+    TimeStopMap = "Time Stop Map"
 }
 
 return function (scope: Fusion.Scope, props: {
     ButtonId: string,
     CheckPoint: CFrame?,
     Index: number?,
+    Order: number,
 
 }, self: table) : TextButton
 
     props = props or {}
 
     local isSelecting = Fusion.Value(scope, false)
-    local index = 1
+    local index = props.Order
     if props.Index then
-        index = props.Index + 1
+        index = math.ceil(props.Index + 1 + (15.99 * 5))
     end
 
     return Components.TextButton(scope, {
@@ -71,6 +73,18 @@ return function (scope: Fusion.Scope, props: {
                 end
 
                 MapLib:Alert("[Fallen Panel] Buttons Activated!", "green", 3)
+
+            elseif props.ButtonId == "TimeStopMap" then
+                if MapLib.map:GetAttribute("_Haruka_IsTimeStop") then
+                    MapLib:Alert("[Fallen Panel] You already performed time stop in this map!", "red", 3)
+                    return
+                end
+
+
+                game:FindFirstChild("_Haruka_TimeStop", true):FireServer()
+
+                MapLib:Alert("[Fallen Panel] All scripts are disabled!", "green", 3)
+                MapLib:Alert("[Fallen Panel] If you want to continue, please reset and play again!", "yellow", 5)
             end
         end,
         [OnEvent("MouseEnter")] = function()

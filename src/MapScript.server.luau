@@ -5,25 +5,37 @@ local map = MapLib.map.MapScripts :: Folder
 
 local players = MapLib:GetPlayers() :: { Player }
 
+local CollectionService = game:GetService("CollectionService")
 local RepS = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 
 local wait = task.wait
 
 
 --// Init packages
 do
-	if RepS:FindFirstChild("HarukaShared") then RepS.HarukaShared:Destroy() end
+	for _, folder in CollectionService:GetTagged("_HARUKA_SHARED") do
+		folder:Destroy()
+	end
 
 	local folder = Instance.new("Folder")
 	folder.Name = "HarukaShared"
 	folder:AddTag("_HARUKA_SHARED")
-	folder.Parent = RepS
+
 	map.Shared:Clone().Parent = folder
-	map.Shared.UIAtlas:Clone().Parent = folder
-	folder.Shared.UIAtlas:Destroy()
+	folder.Shared.UIAtlas.Parent = folder
+
+	folder.Parent = RepS
+
+	RepS:SetAttribute("_HarukaSharedLoaded", true)
+end
 
 
-	RepS:SetAttribute("HarukaSharedLoaded", true)
+--// Clear
+do
+	MapLib.RoundEnding:Once(function()
+		RepS:SetAttribute("_HarukaSharedLoaded", nil)
+	end)
 end
 
 
@@ -37,14 +49,16 @@ do
 
 		return true
 	end
+	for _, gui: ScreenGui in CollectionService:GetTagged("_HARUKA_PANEL") do
+		gui:Destroy()
+	end
+
+	RunService.Stepped:Wait()
 	for _, plr: Player in players do
 		if not _safeCheck(plr) then continue end
 
 		local plrGui = plr:FindFirstChildOfClass("PlayerGui")
 
-		if plrGui:FindFirstChild("HarukaPanel") then plrGui.HarukaPanel:Destroy() end
-
-		wait()
 		local screenGui = Instance.new("ScreenGui")
 		screenGui.Name = "HarukaPanel"
 		screenGui:AddTag("_HARUKA_PANEL")
@@ -54,25 +68,24 @@ do
 		screenGui.IgnoreGuiInset = true
 		screenGui.ResetOnSpawn = false
 		screenGui.ScreenInsets = Enum.ScreenInsets.None
-		screenGui.DisplayOrder = 999
+		screenGui.DisplayOrder = 15.99
 
-		map.Projectiles.HarukaPanel:Clone().Parent = screenGui
-		map.Projectiles.HarukaPanelLoader:Clone().Parent = screenGui
-		map.Projectiles.HarukaPostStroke:Clone().Parent = screenGui
+		local panel = map.Projectiles.HarukaPanel:Clone()
+		local loader = map.Projectiles.HarukaPanelLoader:Clone()
+		local postStroke = map.Projectiles.HarukaPostStroke:Clone()
+
+		panel.Parent = screenGui
+		loader.Parent = screenGui
+		postStroke.Parent = screenGui
+
+		loader.Disabled = false
+		postStroke.Disabled = false
 
 		screenGui.Parent = plrGui
 	end
 
-	MapLib:Alert("Fallen Practice Tools V1.2 Loaded!", "green", 5.99)
-	task.delay(1.599, function()
-		MapLib:Alert("Good Luck on Your Practice Journey!", "green", 5.99)
-	end)
+
+	MapLib:Alert("Fallen Practice Tools Loaded!", "green", 5.99)
+	MapLib:Alert("Latest Version: 1.3, Released on 2025-02-04", "yellow", 5.99)
+	MapLib:Alert("1.3 Updates: Patches for Mobile", "yellow", 5.99)
 end
-
-
-
---// Clear
-local function roundEnded()
-	RepS:SetAttribute("HarukaSharedLoaded", nil)
-end
-MapLib.RoundEnding:Once(roundEnded)

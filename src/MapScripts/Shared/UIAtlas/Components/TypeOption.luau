@@ -27,6 +27,7 @@ local Priority = {
 
 return function (scope: Fusion.Scope, props: {
     TypeId: string,
+    Order: number,
 
 }, self: table) : Frame
 
@@ -36,7 +37,7 @@ return function (scope: Fusion.Scope, props: {
     return Components.Frame(scope, {
         Name = "TypeOption_"..props.TypeId,
         Size = fromScale(0.9, 0.11),
-        LayoutOrder = 1,
+        LayoutOrder = props.Order,
 
         [Children] = {
             Components.UIAspectRatioConstraint(scope, 6.29),
