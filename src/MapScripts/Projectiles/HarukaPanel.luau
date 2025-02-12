@@ -38,12 +38,12 @@ return function (plr: Player)
         isMobile = true
     end
 
-    local BUTTON_POS = fromScale(0.99, -0.5)
-    local PANEL_POS = fromScale(0.99, -5.7)
+    local BUTTON_POS = fromScale(0.99, -0.5 + 0.2)
+    local PANEL_POS = fromScale(0.99, -5.7 + 0.2)
     if isMobile then
         if device == "Phone" then
-            BUTTON_POS = fromScale(0.99, -0.05)
-            PANEL_POS = fromScale(0.99, -5.7 + 0.45)
+            BUTTON_POS = fromScale(0.99, 0.3)
+            PANEL_POS = fromScale(0.99, -5.7 + 1 - 0.3)
         end
     end
 

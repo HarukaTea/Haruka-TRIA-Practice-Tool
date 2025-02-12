@@ -86,6 +86,6 @@ do
 
 
 	MapLib:Alert("Fallen Practice Tools Loaded!", "green", 5.99)
-	MapLib:Alert("Latest Version: 1.3, Released on 2025-02-04", "yellow", 5.99)
-	MapLib:Alert("1.3 Updates: Patches for Mobile", "yellow", 5.99)
+	MapLib:Alert("Latest Version: 1.35, Released on 2025-02-12", "yellow", 5.99)
+	MapLib:Alert("1.35 Updates: Patches for Mobile", "yellow", 5.99)
 end
